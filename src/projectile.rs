@@ -1,17 +1,13 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct Projectile;
+pub struct Projectile {
+    pub damage: f32,
+}
 
-pub fn move_projectiles(
-    mut projectiles: Query<&mut Transform, With<Projectile>>,
-    time: Res<Time>,
-) {
-    let speed = 10.0; // Speed of projectile movement
-    
-    for mut transform in projectiles.iter_mut() {
-        // Move projectile from left to right (increase X)
-        transform.translation.x += speed * time.delta_secs();
+impl Default for Projectile {
+    fn default() -> Self {
+        Self { damage: 10.0 }
     }
 }
 

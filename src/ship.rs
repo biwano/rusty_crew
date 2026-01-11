@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::projectile::Projectile;
+use crate::movable::Movable;
 
 #[derive(Resource)]
 pub struct SpaceshipEntity(pub Entity);
@@ -11,62 +12,66 @@ pub fn setup_ship(
 ) {
     // Load and spawn spaceship at position (0, 0, 0), scaled to 1/100th size
     let spaceship_handle = asset_server.load("models/spaceship.glb#Scene0");
-    let spaceship_entity = commands.spawn(Transform {
-        translation: Vec3::new(0.0, 0.0, 0.0),
-        rotation: Quat::IDENTITY,
-        scale: Vec3::splat(0.01), // Scale to 1/100th size
-    }).id();
+    let spaceship_entity = commands.spawn((
+        Transform {
+            translation: Vec3::new(0.0, 0.0, 0.0),
+            rotation: Quat::IDENTITY,
+            scale: Vec3::splat(0.01), // Scale to 1/100th size
+        },
+        Movable::zero(0.95), // Start with zero velocity and acceleration, damping of 0.95
+    )).id();
     scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
     
     // Store spaceship entity for movement system
     commands.insert_resource(SpaceshipEntity(spaceship_entity));
 }
 
-pub fn move_spaceship(
+pub fn set_ship_acceleration(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     spaceship_entity: Res<SpaceshipEntity>,
-    mut transforms: Query<&mut Transform>,
-    time: Res<Time>,
+    mut movables: Query<&mut Movable>,
 ) {
-    if let Ok(mut transform) = transforms.get_mut(spaceship_entity.0) {
-        let speed = 2.0;
-        let mut movement = Vec3::ZERO;
+    if let Ok(mut movable) = movables.get_mut(spaceship_entity.0) {
+        let acceleration_rate = 5.0; // Acceleration rate
+        let mut accel_vector = Vec3::ZERO;
 
-        // WASD controls
+        // WASD controls - set acceleration direction
         // W = up (positive Y)
         // A = left (negative X)
         // S = down (negative Y)
         // D = right (positive X)
         
         if keyboard_input.pressed(KeyCode::KeyW) {
-            movement.y += speed * time.delta_secs();
+            accel_vector.y += acceleration_rate;
         }
         if keyboard_input.pressed(KeyCode::KeyA) {
-            movement.x -= speed * time.delta_secs();
+            accel_vector.x -= acceleration_rate;
         }
         if keyboard_input.pressed(KeyCode::KeyS) {
-            movement.y -= speed * time.delta_secs();
+            accel_vector.y -= acceleration_rate;
         }
         if keyboard_input.pressed(KeyCode::KeyD) {
-            movement.x += speed * time.delta_secs();
+            accel_vector.x += acceleration_rate;
         }
 
-        transform.translation += movement;
+        // Set acceleration vector
+        movable.acceleration = accel_vector;
     }
 }
 
-pub fn spawn_projectile(
+pub fn fire(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     spaceship_entity: Res<SpaceshipEntity>,
     transforms: Query<&Transform>,
+    movables: Query<&Movable>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Check if space was just pressed (not held)
     if keyboard_input.just_pressed(KeyCode::Space) {
-        // Get spaceship position
-        if let Ok(spaceship_transform) = transforms.get(spaceship_entity.0) {
+        // Get spaceship position and velocity
+        if let (Ok(spaceship_transform), Ok(ship_movable)) = (transforms.get(spaceship_entity.0), movables.get(spaceship_entity.0)) {
             // Create a small sphere for the projectile
             let projectile_mesh = meshes.add(Sphere::new(0.03));
             let projectile_material = materials.add(StandardMaterial {
@@ -75,9 +80,15 @@ pub fn spawn_projectile(
                 ..default()
             });
             
-            // Spawn projectile at spaceship position
+            // Calculate projectile velocity: ship velocity + forward velocity (to the right)
+            let forward_speed = 10.0;
+            let projectile_velocity = ship_movable.velocity + Vec3::new(forward_speed, 0.0, 0.0);
+            
+            // Spawn projectile at spaceship position with inherited velocity
+            // Projectiles have no damping (damping = 1.0) and no acceleration so they maintain constant velocity
             commands.spawn((
-                Projectile,
+                Projectile::default(),
+                Movable::with_velocity(projectile_velocity, 1.0),
                 Mesh3d(projectile_mesh),
                 MeshMaterial3d(projectile_material),
                 Transform::from_translation(spaceship_transform.translation),
