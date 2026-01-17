@@ -1,9 +1,8 @@
+mod movable;
+mod projectiles;
 mod ship;
 mod starfield;
-mod projectile;
-mod projectiles;
 mod target;
-mod movable;
 mod weapons;
 
 use bevy::{
@@ -17,11 +16,14 @@ use bevy::{
     },
 };
 
-use ship::{setup_ship, set_ship_acceleration};
-use starfield::{setup_starfield, move_stars, rotate_skybox};
-use projectile::despawn_out_of_bounds_projectiles;
-use target::{setup_targets, check_projectile_target_collisions, update_target_colors, despawn_dead_targets, despawn_out_of_bounds_targets};
 use movable::MovablePlugin;
+use projectiles::despawn_out_of_bounds_projectiles;
+use ship::{set_ship_acceleration, set_ship_rotation, setup_ship};
+use starfield::{move_stars, rotate_skybox, setup_starfield};
+use target::{
+    check_projectile_target_collisions, despawn_dead_targets, despawn_out_of_bounds_targets,
+    setup_targets, update_target_colors,
+};
 use weapons::{activate_weapon, update_weapon_cooldowns};
 
 fn main() {
@@ -29,25 +31,27 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(MovablePlugin)
         .add_systems(Startup, (setup, setup_ship, setup_starfield, setup_targets))
-        .add_systems(Update, (
-            set_ship_acceleration,
-            update_weapon_cooldowns,
-            activate_weapon,
-            move_stars, 
-            rotate_skybox, 
-            despawn_out_of_bounds_projectiles, 
-            check_projectile_target_collisions,
-            update_target_colors,
-            despawn_dead_targets,
-            despawn_out_of_bounds_targets,
-        ))
+        .add_systems(
+            Update,
+            (
+                set_ship_acceleration,
+                set_ship_rotation,
+                update_weapon_cooldowns,
+                activate_weapon,
+                move_stars,
+                rotate_skybox,
+                despawn_out_of_bounds_projectiles,
+                check_projectile_target_collisions,
+                update_target_colors,
+                despawn_dead_targets,
+                despawn_out_of_bounds_targets,
+            ),
+        )
         .run();
 }
 
 /// set up a simple 3D scene
-fn setup(
-    mut commands: Commands,
-) {
+fn setup(mut commands: Commands) {
     // Set background to pure black
     commands.insert_resource(ClearColor(Color::BLACK));
 

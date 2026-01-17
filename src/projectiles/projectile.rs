@@ -16,7 +16,7 @@ pub fn despawn_out_of_bounds_projectiles(
     projectiles: Query<(Entity, &Transform), With<Projectile>>,
 ) {
     let boundary = 50.0; // Distance from origin before despawning
-    
+
     for (entity, transform) in projectiles.iter() {
         let pos = transform.translation;
         // Despawn if projectile is too far in any direction
@@ -25,4 +25,3 @@ pub fn despawn_out_of_bounds_projectiles(
         }
     }
 }
-

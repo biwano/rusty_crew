@@ -1,7 +1,7 @@
-use bevy::prelude::*;
 use crate::movable::Movable;
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::weapon::Weapon;
+use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct SpaceshipEntity(pub Entity);
@@ -14,15 +14,22 @@ pub fn attach_weapon(
     ship_entity: Entity,
     weapon: Weapon,
 ) {
-    // Store mesh spawner before moving weapon
+    // Store position offset and mesh spawner before moving weapon
+    let position_offset = weapon.weapon_position_offset;
     let mesh_spawner = weapon.mesh_spawner;
-    
+
     // Add weapon component to the ship entity
     commands.entity(ship_entity).insert(weapon);
-    
+
     // Spawn weapon mesh as a child of the ship using the weapon's mesh spawner
     if let Some(spawner) = mesh_spawner {
-        spawner(commands, asset_server, scene_spawner, ship_entity, Vec3::ZERO);
+        spawner(
+            commands,
+            asset_server,
+            scene_spawner,
+            ship_entity,
+            position_offset,
+        );
     }
 }
 
@@ -33,21 +40,29 @@ pub fn setup_ship(
 ) {
     // Load and spawn spaceship at position (0, 0, 0), scaled to 1/100th size
     let spaceship_handle = asset_server.load("models/spaceship.glb#Scene0");
-    
-    let spaceship_entity = commands.spawn((
-        Transform {
-            translation: Vec3::new(0.0, 0.0, 0.0),
-            rotation: Quat::IDENTITY,
-            scale: Vec3::splat(0.01), // Scale to 1/100th size
-        },
-        Movable::zero(0.95), // Start with zero velocity and acceleration, damping of 0.95
-    )).id();
+
+    let spaceship_entity = commands
+        .spawn((
+            Transform {
+                translation: Vec3::new(0.0, 0.0, 0.0),
+                rotation: Quat::IDENTITY,
+                scale: Vec3::splat(0.01), // Scale to 1/100th size
+            },
+            Movable::zero(0.95), // Start with zero velocity and acceleration, damping of 0.95
+        ))
+        .id();
     scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
-    
+
     // Attach cannon weapon to the ship
-    let cannon_weapon = create_cannon();
-    attach_weapon(&mut commands, &asset_server, &mut scene_spawner, spaceship_entity, cannon_weapon);
-    
+    let cannon_weapon = create_cannon(Vec3::new(0.0, 0.0, 0.0)); // Position cannon at ship origin
+    attach_weapon(
+        &mut commands,
+        &asset_server,
+        &mut scene_spawner,
+        spaceship_entity,
+        cannon_weapon,
+    );
+
     // Store spaceship entity for movement system
     commands.insert_resource(SpaceshipEntity(spaceship_entity));
 }
@@ -66,7 +81,7 @@ pub fn set_ship_acceleration(
         // A = left (negative X)
         // S = down (negative Y)
         // D = right (positive X)
-        
+
         if keyboard_input.pressed(KeyCode::KeyW) {
             accel_vector.y += acceleration_rate;
         }
@@ -85,4 +100,28 @@ pub fn set_ship_acceleration(
     }
 }
 
+pub fn set_ship_rotation(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    spaceship_entity: Res<SpaceshipEntity>,
+    mut transforms: Query<&mut Transform>,
+    time: Res<Time>,
+) {
+    if let Ok(mut transform) = transforms.get_mut(spaceship_entity.0) {
+        let rotation_speed = 2.0; // Rotation speed in radians per second
+        let mut rotation_delta = 0.0;
 
+        // Q = rotate counter-clockwise (positive Y rotation)
+        if keyboard_input.pressed(KeyCode::KeyQ) {
+            rotation_delta += rotation_speed * time.delta_secs();
+        }
+        // E = rotate clockwise (negative Y rotation)
+        if keyboard_input.pressed(KeyCode::KeyE) {
+            rotation_delta -= rotation_speed * time.delta_secs();
+        }
+
+        // Apply rotation around Y axis
+        if rotation_delta != 0.0 {
+            transform.rotate_y(rotation_delta);
+        }
+    }
+}
