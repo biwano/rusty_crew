@@ -1,6 +1,7 @@
 mod ship;
 mod starfield;
 mod projectile;
+mod projectiles;
 mod target;
 mod movable;
 mod weapons;

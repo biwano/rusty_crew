@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::movable::Movable;
-use crate::weapons::Weapon;
+use crate::weapons::cannon::create_cannon;
 
 #[derive(Resource)]
 pub struct SpaceshipEntity(pub Entity);
@@ -19,7 +19,7 @@ pub fn setup_ship(
             scale: Vec3::splat(0.01), // Scale to 1/100th size
         },
         Movable::zero(0.95), // Start with zero velocity and acceleration, damping of 0.95
-        Weapon::new(0.5), // Weapon with 0.5 second cooldown
+        create_cannon(), // Cannon weapon
     )).id();
     scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
     
