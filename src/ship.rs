@@ -4,6 +4,21 @@ use crate::weapons::create_rocket_launcher;
 use crate::weapons::weapon::{Weapon, WeaponMesh};
 use bevy::prelude::*;
 
+#[derive(Component)]
+pub struct Ship {
+    pub max_health: f32,
+    pub current_health: f32,
+}
+
+impl Default for Ship {
+    fn default() -> Self {
+        Self {
+            max_health: 100.0,
+            current_health: 100.0,
+        }
+    }
+}
+
 pub struct ShipPlugin;
 
 impl Plugin for ShipPlugin {
@@ -96,6 +111,7 @@ pub fn setup_ship(
 
     let spaceship_entity = commands
         .spawn((
+            Ship::default(),
             Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
                 rotation: Quat::IDENTITY,

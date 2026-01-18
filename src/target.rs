@@ -1,21 +1,83 @@
 use crate::hud::PlayerScore;
 use crate::movable::Movable;
 use crate::projectiles::Projectile;
+use crate::ship::Ship;
 use bevy::prelude::*;
 
 const TARGET_HIT_POINTS: f32 = 20.0;
+
+// Helper function to check if two positions are colliding
+fn check_collision(pos1: Vec3, pos2: Vec3, collision_distance: f32) -> bool {
+    let distance = pos1.distance(pos2);
+    distance < collision_distance
+}
+
+// Generic collision detection for projectile-target collisions
+fn check_projectile_target_collisions_with_callback<F>(
+    commands: &mut Commands,
+    projectiles: &Query<(Entity, &Transform, &Projectile)>,
+    targets: &mut Query<(Entity, &mut Target, &Transform)>,
+    collision_distance: f32,
+    mut callback: F,
+) where
+    F: FnMut(&mut Commands, (Entity, &Transform, &Projectile), (Entity, Mut<Target>, &Transform)),
+{
+    for projectile in projectiles.iter() {
+        let projectile_pos = projectile.1.translation;
+
+        for target in targets.iter_mut() {
+            let target_pos = target.2.translation;
+
+            if check_collision(projectile_pos, target_pos, collision_distance) {
+                callback(commands, projectile, target);
+                break; // Only hit one target per projectile
+            }
+        }
+    }
+}
+
+// Generic collision detection for ship-target collisions
+fn check_ship_target_collisions_with_callback<F>(
+    ships: &mut Query<&mut Ship, (With<Ship>, Without<Target>)>,
+    targets: &Query<&Target, (With<Target>, Without<Ship>)>,
+    ship_transforms: &Query<&Transform, (With<Ship>, Without<Target>)>,
+    target_transforms: &Query<&Transform, (With<Target>, Without<Ship>)>,
+    collision_distance: f32,
+    mut callback: F,
+) where
+    F: FnMut(Mut<Ship>, &Target),
+{
+    for ship_transform in ship_transforms.iter() {
+        let ship_pos = ship_transform.translation;
+
+        for target_transform in target_transforms.iter() {
+            let target_pos = target_transform.translation;
+
+            if check_collision(ship_pos, target_pos, collision_distance) {
+                if let Ok(ship) = ships.single_mut() {
+                    if let Ok(target) = targets.single() {
+                        callback(ship, target);
+                    }
+                }
+                break; // Only process one collision per frame for simplicity
+            }
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct Target {
     pub hit_points: f32,
     pub score: u32,
+    pub damage: f32,
 }
 
 impl Default for Target {
     fn default() -> Self {
         Self {
             hit_points: TARGET_HIT_POINTS,
-            score: 100, // Default score for destroying a target
+            score: 100,   // Default score for destroying a target
+            damage: 20.0, // Damage dealt to ship on collision
         }
     }
 }
@@ -73,24 +135,21 @@ pub fn check_projectile_target_collisions(
 ) {
     let collision_distance = 0.5; // Collision detection distance
 
-    for (projectile_entity, projectile_transform, projectile) in projectiles.iter() {
-        let projectile_pos = projectile_transform.translation;
+    check_projectile_target_collisions_with_callback(
+        &mut commands,
+        &projectiles,
+        &mut targets,
+        collision_distance,
+        |commands,
+         (projectile_entity, _projectile_transform, projectile),
+         (_target_entity, mut target, _target_transform)| {
+            // Apply damage to target
+            target.hit_points -= projectile.damage;
 
-        for (_target_entity, mut target, target_transform) in targets.iter_mut() {
-            let target_pos = target_transform.translation;
-            let distance = projectile_pos.distance(target_pos);
-
-            // If projectile is close enough to target, apply damage
-            if distance < collision_distance {
-                // Apply damage to target
-                target.hit_points -= projectile.damage;
-
-                // Despawn projectile
-                commands.entity(projectile_entity).despawn();
-                break; // Only hit one target per projectile
-            }
-        }
-    }
+            // Despawn projectile
+            commands.entity(projectile_entity).despawn();
+        },
+    );
 }
 
 pub fn update_target_colors(
@@ -177,6 +236,31 @@ pub fn despawn_out_of_bounds_targets(
     }
 }
 
+pub fn check_ship_target_collisions(
+    mut ships: Query<&mut Ship, (With<Ship>, Without<Target>)>,
+    targets: Query<&Target, (With<Target>, Without<Ship>)>,
+    ship_transforms: Query<&Transform, (With<Ship>, Without<Target>)>,
+    target_transforms: Query<&Transform, (With<Target>, Without<Ship>)>,
+) {
+    let collision_distance = 0.5; // Collision detection distance
+
+    check_ship_target_collisions_with_callback(
+        &mut ships,
+        &targets,
+        &ship_transforms,
+        &target_transforms,
+        collision_distance,
+        |mut ship, target| {
+            // Apply damage to ship
+            ship.current_health -= target.damage;
+            // Ensure health doesn't go below 0
+            if ship.current_health < 0.0 {
+                ship.current_health = 0.0;
+            }
+        },
+    );
+}
+
 pub struct TargetPlugin;
 
 impl Plugin for TargetPlugin {
@@ -185,6 +269,7 @@ impl Plugin for TargetPlugin {
             Update,
             (
                 check_projectile_target_collisions,
+                check_ship_target_collisions,
                 update_target_colors,
                 despawn_dead_targets,
                 despawn_out_of_bounds_targets,
