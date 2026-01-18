@@ -20,8 +20,20 @@ pub fn spawn_cannon_ball_projectile(
         ..default()
     });
 
+    // Calculate forward direction from rotation
+    let forward_direction = rotation * Vec3::Z;
+
     commands.spawn((
-        Projectile::default(),
+        Projectile {
+            damage: 10.0,
+            acceleration: 0.0,
+            agility: 0.0,
+            direction: forward_direction.normalize(),
+            homing: false,
+            activation_timer: 0.0,
+            target: None,
+            mesh_rotation_offset: Quat::IDENTITY, // No mesh offset for cannon balls
+        },
         Movable::with_velocity(velocity, 1.0),
         Mesh3d(projectile_mesh),
         MeshMaterial3d(projectile_material),
