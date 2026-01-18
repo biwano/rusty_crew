@@ -1,5 +1,5 @@
 use crate::projectiles::spawn_cannon_ball_projectile;
-use crate::weapons::weapon::Weapon;
+use crate::weapons::weapon::{Weapon, WeaponMesh};
 use bevy::prelude::*;
 
 /// Creates a cannon weapon with specified position offset
@@ -23,11 +23,14 @@ pub fn spawn_cannon_mesh(
 ) {
     let weapon_mesh_handle = asset_server.load("models/weapons/cannon.glb#Scene0");
     let weapon_mesh_entity = commands
-        .spawn((Transform {
-            translation, // Position relative to ship
-            rotation: Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2), // Rotate 90 degrees around Z axis
-            scale: Vec3::splat(10.0), // Scale to match ship scale
-        },))
+        .spawn((
+            Transform {
+                translation, // Position relative to ship
+                rotation: Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2), // Rotate 90 degrees around Z axis
+                scale: Vec3::splat(10.0), // Scale to match ship scale
+            },
+            WeaponMesh,
+        ))
         .id();
     scene_spawner.spawn_as_child(weapon_mesh_handle, weapon_mesh_entity);
     // Attach weapon mesh as a child of the parent

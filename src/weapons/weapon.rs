@@ -22,6 +22,9 @@ pub type MeshSpawner = fn(
 );
 
 #[derive(Component)]
+pub struct WeaponMesh;
+
+#[derive(Component)]
 pub struct Weapon {
     pub fire_cooldown_duration: f32,
     pub cooldown_timer: f32,

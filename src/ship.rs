@@ -1,7 +1,7 @@
 use crate::movable::Movable;
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
-use crate::weapons::weapon::Weapon;
+use crate::weapons::weapon::{Weapon, WeaponMesh};
 use bevy::prelude::*;
 
 #[derive(Resource)]
@@ -34,6 +34,43 @@ pub fn attach_weapon(
     }
 }
 
+/// Removes the current weapon from a ship entity, including despawning weapon mesh
+pub fn remove_weapon(
+    commands: &mut Commands,
+    ship_entity: Entity,
+    weapon_meshes: &Query<Entity, With<WeaponMesh>>,
+) {
+    // Remove the Weapon component from the ship entity
+    commands.entity(ship_entity).remove::<Weapon>();
+
+    // Despawn any weapon mesh entities
+    for weapon_mesh_entity in weapon_meshes.iter() {
+        commands.entity(weapon_mesh_entity).despawn();
+    }
+}
+
+/// Switches the weapon on a ship entity
+pub fn switch_weapon(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    scene_spawner: &mut ResMut<SceneSpawner>,
+    ship_entity: Entity,
+    weapon_meshes: &Query<Entity, With<WeaponMesh>>,
+    new_weapon: Weapon,
+) {
+    // Remove current weapon
+    remove_weapon(commands, ship_entity, weapon_meshes);
+
+    // Attach new weapon
+    attach_weapon(
+        commands,
+        asset_server,
+        scene_spawner,
+        ship_entity,
+        new_weapon,
+    );
+}
+
 pub fn setup_ship(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -54,8 +91,7 @@ pub fn setup_ship(
         .id();
     scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
 
-    // Attach cannon weapon to the ship
-    let cannon_weapon = create_cannon(Vec3::new(0.0, 0.0, 0.0)); // Position cannon at ship origin
+    // Attach rocket launcher weapon to the ship (default weapon)
     let rocket_weapon = create_rocket_launcher(Vec3::new(0.0, 0.0, 0.0)); // Position rocket launcher at ship origin
     attach_weapon(
         &mut commands,
@@ -125,5 +161,40 @@ pub fn set_ship_rotation(
         if rotation_delta != 0.0 {
             transform.rotate_y(rotation_delta);
         }
+    }
+}
+
+pub fn switch_weapon_input(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    spaceship_entity: Res<SpaceshipEntity>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut scene_spawner: ResMut<SceneSpawner>,
+    weapon_meshes: Query<Entity, With<WeaponMesh>>,
+) {
+    // Press 1 for cannon
+    if keyboard_input.just_pressed(KeyCode::Digit1) {
+        let cannon_weapon = create_cannon(Vec3::new(0.0, 0.0, 0.0));
+        switch_weapon(
+            &mut commands,
+            &asset_server,
+            &mut scene_spawner,
+            spaceship_entity.0,
+            &weapon_meshes,
+            cannon_weapon,
+        );
+    }
+
+    // Press 2 for rocket launcher
+    if keyboard_input.just_pressed(KeyCode::Digit2) {
+        let rocket_weapon = create_rocket_launcher(Vec3::new(0.0, 0.0, 0.0));
+        switch_weapon(
+            &mut commands,
+            &asset_server,
+            &mut scene_spawner,
+            spaceship_entity.0,
+            &weapon_meshes,
+            rocket_weapon,
+        );
     }
 }

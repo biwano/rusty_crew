@@ -18,7 +18,7 @@ use bevy::{
 
 use movable::MovablePlugin;
 use projectiles::despawn_out_of_bounds_projectiles;
-use ship::{set_ship_acceleration, set_ship_rotation, setup_ship};
+use ship::{set_ship_acceleration, set_ship_rotation, setup_ship, switch_weapon_input};
 use starfield::{move_stars, rotate_skybox, setup_starfield};
 use target::{
     check_projectile_target_collisions, despawn_dead_targets, despawn_out_of_bounds_targets,
@@ -36,6 +36,7 @@ fn main() {
             (
                 set_ship_acceleration,
                 set_ship_rotation,
+                switch_weapon_input,
                 update_weapon_cooldowns,
                 activate_weapon,
                 move_stars,
