@@ -84,3 +84,12 @@ pub fn rotate_skybox(mut skybox: Query<&mut Transform, With<Skybox>>, time: Res<
         transform.rotate_y(rotation_speed * time.delta_secs());
     }
 }
+
+pub struct StarfieldPlugin;
+
+impl Plugin for StarfieldPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, setup_starfield)
+            .add_systems(Update, (move_stars, rotate_skybox));
+    }
+}

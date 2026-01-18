@@ -178,3 +178,19 @@ pub fn despawn_out_of_bounds_targets(
         }
     }
 }
+
+pub struct TargetPlugin;
+
+impl Plugin for TargetPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, setup_targets).add_systems(
+            Update,
+            (
+                check_projectile_target_collisions,
+                update_target_colors,
+                despawn_dead_targets,
+                despawn_out_of_bounds_targets,
+            ),
+        );
+    }
+}
