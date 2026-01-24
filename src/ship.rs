@@ -1,3 +1,4 @@
+use crate::collision::{Collidable, Team};
 use crate::movable::Movable;
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
@@ -5,19 +6,7 @@ use crate::weapons::weapon::{Weapon, WeaponMesh};
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct Ship {
-    pub max_health: f32,
-    pub current_health: f32,
-}
-
-impl Default for Ship {
-    fn default() -> Self {
-        Self {
-            max_health: 100.0,
-            current_health: 100.0,
-        }
-    }
-}
+pub struct Ship;
 
 pub struct ShipPlugin;
 
@@ -111,7 +100,8 @@ pub fn setup_ship(
 
     let spaceship_entity = commands
         .spawn((
-            Ship::default(),
+            Ship,
+            Collidable::new(0.5, 1000.0, 100.0, Team::Player), // 0.5 radius, no damage, 100 HP, player team
             Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
                 rotation: Quat::IDENTITY,

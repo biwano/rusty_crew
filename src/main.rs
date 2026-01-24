@@ -1,3 +1,4 @@
+mod collision;
 mod hud;
 mod movable;
 mod projectiles;
@@ -17,6 +18,7 @@ use bevy::{
     },
 };
 
+use collision::CollisionPlugin;
 use hud::HudPlugin;
 use movable::MovablePlugin;
 use projectiles::ProjectilePlugin;
@@ -28,6 +30,7 @@ use weapons::WeaponPlugin;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(CollisionPlugin)
         .add_plugins(HudPlugin)
         .add_plugins(MovablePlugin)
         .add_plugins(ShipPlugin)

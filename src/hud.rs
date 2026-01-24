@@ -1,3 +1,4 @@
+use crate::collision::Collidable;
 use crate::ship::Ship;
 use bevy::prelude::*;
 
@@ -94,13 +95,14 @@ pub fn update_score_display(
 }
 
 pub fn update_health_bar(
-    ship_query: Query<&Ship>,
+    ship_query: Query<&Collidable, With<Ship>>,
     mut health_bar_fill_query: Query<&mut Node, With<HealthBarFill>>,
 ) {
-    if let Ok(ship) = ship_query.single() {
+    if let Ok(collidable) = ship_query.single() {
         if let Ok(mut health_bar_fill_node) = health_bar_fill_query.single_mut() {
             // Calculate health percentage
-            let health_percentage = (ship.current_health / ship.max_health).clamp(0.0, 1.0);
+            let health_percentage =
+                (collidable.hit_points / collidable.max_hit_points).clamp(0.0, 1.0);
 
             // Update the width of the health bar fill
             health_bar_fill_node.width = Val::Percent(health_percentage * 100.0);

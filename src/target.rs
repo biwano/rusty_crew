@@ -1,83 +1,20 @@
+use crate::collision::{Collidable, Team};
 use crate::hud::PlayerScore;
 use crate::movable::Movable;
 use crate::projectiles::Projectile;
-use crate::ship::Ship;
 use bevy::prelude::*;
 
 const TARGET_HIT_POINTS: f32 = 20.0;
 
-// Helper function to check if two positions are colliding
-fn check_collision(pos1: Vec3, pos2: Vec3, collision_distance: f32) -> bool {
-    let distance = pos1.distance(pos2);
-    distance < collision_distance
-}
-
-// Generic collision detection for projectile-target collisions
-fn check_projectile_target_collisions_with_callback<F>(
-    commands: &mut Commands,
-    projectiles: &Query<(Entity, &Transform, &Projectile)>,
-    targets: &mut Query<(Entity, &mut Target, &Transform)>,
-    collision_distance: f32,
-    mut callback: F,
-) where
-    F: FnMut(&mut Commands, (Entity, &Transform, &Projectile), (Entity, Mut<Target>, &Transform)),
-{
-    for projectile in projectiles.iter() {
-        let projectile_pos = projectile.1.translation;
-
-        for target in targets.iter_mut() {
-            let target_pos = target.2.translation;
-
-            if check_collision(projectile_pos, target_pos, collision_distance) {
-                callback(commands, projectile, target);
-                break; // Only hit one target per projectile
-            }
-        }
-    }
-}
-
-// Generic collision detection for ship-target collisions
-fn check_ship_target_collisions_with_callback<F>(
-    ships: &mut Query<&mut Ship, (With<Ship>, Without<Target>)>,
-    targets: &Query<&Target, (With<Target>, Without<Ship>)>,
-    ship_transforms: &Query<&Transform, (With<Ship>, Without<Target>)>,
-    target_transforms: &Query<&Transform, (With<Target>, Without<Ship>)>,
-    collision_distance: f32,
-    mut callback: F,
-) where
-    F: FnMut(Mut<Ship>, &Target),
-{
-    for ship_transform in ship_transforms.iter() {
-        let ship_pos = ship_transform.translation;
-
-        for target_transform in target_transforms.iter() {
-            let target_pos = target_transform.translation;
-
-            if check_collision(ship_pos, target_pos, collision_distance) {
-                if let Ok(ship) = ships.single_mut() {
-                    if let Ok(target) = targets.single() {
-                        callback(ship, target);
-                    }
-                }
-                break; // Only process one collision per frame for simplicity
-            }
-        }
-    }
-}
-
 #[derive(Component)]
 pub struct Target {
-    pub hit_points: f32,
     pub score: u32,
-    pub damage: f32,
 }
 
 impl Default for Target {
     fn default() -> Self {
         Self {
-            hit_points: TARGET_HIT_POINTS,
-            score: 100,   // Default score for destroying a target
-            damage: 20.0, // Damage dealt to ship on collision
+            score: 100, // Default score for destroying a target
         }
     }
 }
@@ -121,6 +58,7 @@ pub fn spawn_target(
 
     commands.spawn((
         Target::default(),
+        Collidable::new(0.25, 20.0, TARGET_HIT_POINTS, Team::Enemy), // 0.25 radius, 20 damage, 20 HP, enemy team
         Movable::with_velocity(left_velocity, 1.0), // No damping, constant velocity
         Mesh3d(cube_mesh),
         MeshMaterial3d(target_material),
@@ -128,38 +66,14 @@ pub fn spawn_target(
     ));
 }
 
-pub fn check_projectile_target_collisions(
-    mut commands: Commands,
-    projectiles: Query<(Entity, &Transform, &Projectile)>,
-    mut targets: Query<(Entity, &mut Target, &Transform)>,
-) {
-    let collision_distance = 0.5; // Collision detection distance
-
-    check_projectile_target_collisions_with_callback(
-        &mut commands,
-        &projectiles,
-        &mut targets,
-        collision_distance,
-        |commands,
-         (projectile_entity, _projectile_transform, projectile),
-         (_target_entity, mut target, _target_transform)| {
-            // Apply damage to target
-            target.hit_points -= projectile.damage;
-
-            // Despawn projectile
-            commands.entity(projectile_entity).despawn();
-        },
-    );
-}
-
 pub fn update_target_colors(
-    targets: Query<(&Target, &MeshMaterial3d<StandardMaterial>)>,
+    targets: Query<(&Collidable, &MeshMaterial3d<StandardMaterial>), With<Target>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    for (target, material_handle) in targets.iter() {
+    for (collidable, material_handle) in targets.iter() {
         // Calculate color based on hit points
         // Green when healthy (max HP), red when dead (0 HP)
-        let health_ratio = (target.hit_points / TARGET_HIT_POINTS).clamp(0.0, 1.0);
+        let health_ratio = (collidable.hit_points / collidable.max_hit_points).clamp(0.0, 1.0);
         let red = 1.0 - health_ratio;
         let green = health_ratio;
 
@@ -172,15 +86,15 @@ pub fn update_target_colors(
 
 pub fn despawn_dead_targets(
     mut commands: Commands,
-    targets: Query<(Entity, &Target, &Transform), (With<Target>, Without<Projectile>)>,
+    targets: Query<(Entity, &Target, &Collidable, &Transform), (With<Target>, Without<Projectile>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut player_score: ResMut<PlayerScore>,
 ) {
     let cube_mesh = meshes.add(Cuboid::new(0.5, 0.5, 0.5));
 
-    for (entity, target, _transform) in targets.iter() {
-        if target.hit_points <= 0.0 {
+    for (entity, target, collidable, _transform) in targets.iter() {
+        if collidable.hit_points <= 0.0 {
             // Add score to player
             player_score.score += target.score;
 
@@ -236,31 +150,6 @@ pub fn despawn_out_of_bounds_targets(
     }
 }
 
-pub fn check_ship_target_collisions(
-    mut ships: Query<&mut Ship, (With<Ship>, Without<Target>)>,
-    targets: Query<&Target, (With<Target>, Without<Ship>)>,
-    ship_transforms: Query<&Transform, (With<Ship>, Without<Target>)>,
-    target_transforms: Query<&Transform, (With<Target>, Without<Ship>)>,
-) {
-    let collision_distance = 0.5; // Collision detection distance
-
-    check_ship_target_collisions_with_callback(
-        &mut ships,
-        &targets,
-        &ship_transforms,
-        &target_transforms,
-        collision_distance,
-        |mut ship, target| {
-            // Apply damage to ship
-            ship.current_health -= target.damage;
-            // Ensure health doesn't go below 0
-            if ship.current_health < 0.0 {
-                ship.current_health = 0.0;
-            }
-        },
-    );
-}
-
 pub struct TargetPlugin;
 
 impl Plugin for TargetPlugin {
@@ -268,8 +157,6 @@ impl Plugin for TargetPlugin {
         app.add_systems(Startup, setup_targets).add_systems(
             Update,
             (
-                check_projectile_target_collisions,
-                check_ship_target_collisions,
                 update_target_colors,
                 despawn_dead_targets,
                 despawn_out_of_bounds_targets,
