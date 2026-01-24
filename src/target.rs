@@ -21,13 +21,10 @@ impl Default for Target {
 
 pub fn setup_targets(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut scene_spawner: ResMut<SceneSpawner>,
 ) {
-    // Create a cube mesh for targets
-    let cube_mesh = meshes.add(Cuboid::new(0.5, 0.5, 0.5));
-
-    // Spawn 5 cubes at different positions (all at z=0)
+    // Spawn 5 targets at different positions (all at z=0)
     let positions = [
         Vec3::new(3.0, 0.0, 0.0),
         Vec3::new(3.0, 2.0, 0.0),
@@ -37,33 +34,36 @@ pub fn setup_targets(
     ];
 
     for position in positions.iter() {
-        spawn_target(&mut commands, &mut materials, *position, cube_mesh.clone());
+        spawn_target(&mut commands, &asset_server, &mut scene_spawner, *position);
     }
 }
 
 pub fn spawn_target(
     commands: &mut Commands,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
+    asset_server: &Res<AssetServer>,
+    scene_spawner: &mut ResMut<SceneSpawner>,
     position: Vec3,
-    cube_mesh: Handle<Mesh>,
 ) {
-    // Create a unique material for each target (green when healthy)
-    let target_material = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.0, 1.0, 0.0), // Green when healthy
-        ..default()
-    });
+    // Load the drone model
+    let drone_handle = asset_server.load("models/enemies/drone.glb#Scene0");
 
     // Targets move slowly to the left (negative X direction)
     let left_velocity = Vec3::new(-0.2, 0.0, 0.0);
 
-    commands.spawn((
-        Target::default(),
-        Collidable::new(0.25, 20.0, TARGET_HIT_POINTS, Team::Enemy), // 0.25 radius, 20 damage, 20 HP, enemy team
-        Movable::with_velocity(left_velocity, 1.0), // No damping, constant velocity
-        Mesh3d(cube_mesh),
-        MeshMaterial3d(target_material),
-        Transform::from_translation(position),
-    ));
+    let target_entity = commands
+        .spawn((
+            Target::default(),
+            Collidable::new(0.25, 20.0, TARGET_HIT_POINTS, Team::Enemy), // 0.25 radius, 20 damage, 20 HP, enemy team
+            Movable::with_velocity(left_velocity, 1.0), // No damping, constant velocity
+            Transform {
+                translation: position,
+                rotation: Quat::from_rotation_y(-std::f32::consts::PI / 2.0), // Rotate 90 degrees left to face movement direction
+                scale: Vec3::splat(0.1),
+            },
+        ))
+        .id();
+
+    scene_spawner.spawn_as_child(drone_handle, target_entity);
 }
 
 pub fn update_target_colors(
@@ -86,13 +86,11 @@ pub fn update_target_colors(
 
 pub fn despawn_dead_targets(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut scene_spawner: ResMut<SceneSpawner>,
     targets: Query<(Entity, &Target, &Collidable, &Transform), (With<Target>, Without<Projectile>)>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     mut player_score: ResMut<PlayerScore>,
 ) {
-    let cube_mesh = meshes.add(Cuboid::new(0.5, 0.5, 0.5));
-
     for (entity, target, collidable, _transform) in targets.iter() {
         if collidable.hit_points <= 0.0 {
             // Add score to player
@@ -106,9 +104,9 @@ pub fn despawn_dead_targets(
 
             spawn_target(
                 &mut commands,
-                &mut materials,
+                &asset_server,
+                &mut scene_spawner,
                 new_position,
-                cube_mesh.clone(),
             );
 
             // Despawn the dead target
@@ -119,11 +117,10 @@ pub fn despawn_dead_targets(
 
 pub fn despawn_out_of_bounds_targets(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut scene_spawner: ResMut<SceneSpawner>,
     targets: Query<(Entity, &Transform), (With<Target>, Without<Projectile>)>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let cube_mesh = meshes.add(Cuboid::new(0.5, 0.5, 0.5));
     let left_boundary = -5.0; // Despawn targets that go too far to the left
 
     for (entity, transform) in targets.iter() {
@@ -139,9 +136,9 @@ pub fn despawn_out_of_bounds_targets(
 
             spawn_target(
                 &mut commands,
-                &mut materials,
+                &asset_server,
+                &mut scene_spawner,
                 new_position,
-                cube_mesh.clone(),
             );
 
             // Despawn the out-of-bounds target
