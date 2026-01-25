@@ -53,23 +53,88 @@ impl Collidable {
 pub fn handle_collision_events(
     mut collision_events: MessageReader<CollisionEvent>,
     mut collidables: Query<&mut Collidable>,
+    parents: Query<&ChildOf>,
 ) {
     for collision_event in collision_events.read() {
-        if let CollisionEvent::Started(entity_a, entity_b, _) = collision_event {
-            // Try to get both collidables. If one of them is missing, it's not a collision we care about
-            if let Ok([mut coll_a, mut coll_b]) = collidables.get_many_mut([*entity_a, *entity_b]) {
-                // Skip collision if entities are on the same team
-                if coll_a.team == coll_b.team {
+        if let CollisionEvent::Started(e1, e2, _) = collision_event {
+            let root_a = find_collidable_root(*e1, &collidables, &parents);
+            let root_b = find_collidable_root(*e2, &collidables, &parents);
+
+            if let (Some(entity_a), Some(entity_b)) = (root_a, root_b) {
+                if entity_a == entity_b {
                     continue;
                 }
 
-                // Apply damage to both entities based on the other's damage
-                let damage_a = coll_a.damage;
-                let damage_b = coll_b.damage;
+                // Try to get both collidables. If one of them is missing, it's not a collision we care about
+                if let Ok([mut coll_a, mut coll_b]) = collidables.get_many_mut([entity_a, entity_b])
+                {
+                    // Skip collision if entities are on the same team
+                    if coll_a.team == coll_b.team {
+                        continue;
+                    }
+                    println!(
+                        "Collision between Team::{:?} and Team::{:?}",
+                        coll_a.team, coll_b.team
+                    );
+                    println!("entity_a: {:?}, entity_b: {:?}", entity_a, entity_b);
 
-                coll_a.take_damage(damage_b);
-                coll_b.take_damage(damage_a);
+                    // Apply damage to both entities based on the other's damage
+                    let damage_a = coll_a.damage;
+                    let damage_b = coll_b.damage;
+
+                    coll_a.take_damage(damage_b);
+                    coll_b.take_damage(damage_a);
+                }
             }
+        }
+    }
+}
+
+/// Propagates physics settings from parent to children with colliders.
+/// This is useful when using AsyncSceneCollider, as it creates colliders on children
+/// but doesn't automatically copy ActiveEvents or ActiveCollisionTypes from the parent.
+/// This system walks up the entity hierarchy to find the nearest ancestor with physics settings.
+pub fn propagate_physics_settings(
+    mut commands: Commands,
+    physics_settings: Query<(&ActiveEvents, &ActiveCollisionTypes)>,
+    child_query: Query<Entity, (With<Collider>, Without<ActiveEvents>)>,
+    parents: Query<&ChildOf>,
+) {
+    for child_entity in child_query.iter() {
+        let mut current = child_entity;
+        // Walk up the hierarchy to find an entity with physics settings
+        while let Ok(child_of) = parents.get(current) {
+            let parent = child_of.parent();
+            if let Ok((active_events, active_types)) = physics_settings.get(parent) {
+                commands
+                    .entity(child_entity)
+                    .insert((*active_events, *active_types));
+                println!(
+                    "Propagated physics settings from ancestor {:?} to child collider {:?}",
+                    parent, child_entity
+                );
+                break;
+            }
+            current = parent;
+        }
+    }
+}
+
+/// Helper function to find the ancestor entity that has the Collidable component
+fn find_collidable_root(
+    entity: Entity,
+    collidables: &Query<&mut Collidable>,
+    parents: &Query<&ChildOf>,
+) -> Option<Entity> {
+    let mut current = entity;
+    loop {
+        if collidables.contains(current) {
+            return Some(current);
+        }
+        if let Ok(parent) = parents.get(current) {
+            current = parent.parent();
+        } else {
+            return None;
         }
     }
 }
@@ -88,6 +153,13 @@ pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_collision_events, despawn_dead_collidable));
+        app.add_systems(
+            Update,
+            (
+                handle_collision_events,
+                propagate_physics_settings,
+                despawn_dead_collidable,
+            ),
+        );
     }
 }

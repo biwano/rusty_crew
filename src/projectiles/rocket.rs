@@ -39,7 +39,11 @@ pub fn spawn_rocket_projectile(
                 angular_damping: 0.0,
             },
             RigidBody::KinematicVelocityBased,
-            Collider::ball(500.0), // 0.1 world radius (500.0 * 0.0002 scale)
+            SceneRoot(rocket_scene_handle),
+            AsyncSceneCollider {
+                shape: Some(ComputedColliderShape::ConvexHull),
+                named_shapes: Default::default(),
+            },
             ActiveEvents::COLLISION_EVENTS,
             Transform {
                 translation: position,
@@ -48,7 +52,4 @@ pub fn spawn_rocket_projectile(
             },
         ))
         .id();
-
-    // Spawn the rocket mesh as a child of the projectile entity
-    scene_spawner.spawn_as_child(rocket_scene_handle, rocket_entity);
 }

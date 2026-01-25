@@ -109,12 +109,19 @@ pub fn setup_ship(
                 angular_damping: 0.0,
             },
             RigidBody::KinematicVelocityBased,
-            Collider::ball(50.0), // 0.5 world radius (50.0 * 0.01 scale)
             ActiveEvents::COLLISION_EVENTS,
             ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+            SceneRoot(spaceship_handle),
+            AsyncSceneCollider {
+                shape: Some(ComputedColliderShape::ConvexHull),
+                named_shapes: Default::default(),
+            },
         ))
         .id();
-    scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
+    //scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
+    /*commands.spawn(SceneRoot(asset_server.load(
+        GltfAssetLabel::Scene(0).from_asset("models/ships/spaceship.glb#Scene0"),
+    )));*/
 
     // Attach rocket launcher weapon to the ship (default weapon)
     let rocket_weapon = create_rocket_launcher(Vec3::new(0.0, 0.0, 0.0)); // Position rocket launcher at ship origin
