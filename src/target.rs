@@ -41,7 +41,7 @@ pub fn setup_targets(
 pub fn spawn_target(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    scene_spawner: &mut ResMut<SceneSpawner>,
+    _scene_spawner: &mut ResMut<SceneSpawner>,
     position: Vec3,
 ) {
     // Load the drone model
@@ -50,10 +50,10 @@ pub fn spawn_target(
     // Targets move slowly to the left (negative X direction)
     let left_velocity = Vec3::new(-0.2, 0.0, 0.0);
 
-    let target_entity = commands
+    let _target_entity = commands
         .spawn((
             Target::default(),
-            Collidable::new(0.25, 20.0, TARGET_HIT_POINTS, Team::Enemy), // 0.25 radius, 20 damage, 20 HP, enemy team
+            Collidable::new(20.0, TARGET_HIT_POINTS, Team::Enemy), // 20 damage, 20 HP, enemy team
             Velocity::linear(left_velocity),
             RigidBody::KinematicVelocityBased,
             ActiveEvents::COLLISION_EVENTS,

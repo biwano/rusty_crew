@@ -9,7 +9,7 @@ pub fn spawn_rocket_projectile(
     _meshes: &mut ResMut<Assets<Mesh>>,
     _materials: &mut ResMut<Assets<StandardMaterial>>,
     asset_server: &Res<AssetServer>,
-    scene_spawner: &mut ResMut<SceneSpawner>,
+    _scene_spawner: &mut ResMut<SceneSpawner>,
     position: Vec3,
     velocity: Vec3,
     rotation: Quat,
@@ -20,7 +20,7 @@ pub fn spawn_rocket_projectile(
     let rocket_rotation = rotation * Quat::from_rotation_y(std::f32::consts::FRAC_PI_2);
     let forward_direction = rocket_rotation * Vec3::Z;
 
-    let rocket_entity = commands
+    let _rocket_entity = commands
         .spawn((
             Projectile {
                 damage: 25.0,      // Rockets do more damage than cannon balls
@@ -32,7 +32,7 @@ pub fn spawn_rocket_projectile(
                 target: None,          // No target initially
                 mesh_rotation_offset: Quat::from_rotation_y(std::f32::consts::PI), // 90-degree Y rotation for rocket mesh
             },
-            Collidable::new(0.1, 25.0, 1.0, Team::Player), // Larger hitbox, 25 damage, 1 HP, player team
+            Collidable::new(25.0, 1.0, Team::Player), // 25 damage, 1 HP, player team
             Velocity::linear(velocity),
             Damping {
                 linear_damping: 0.6,

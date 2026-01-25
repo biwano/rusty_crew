@@ -97,7 +97,7 @@ pub fn setup_ship(
     let spaceship_entity = commands
         .spawn((
             Ship,
-            Collidable::new(0.5, 1000.0, 100.0, Team::Player), // 0.5 radius, no damage, 100 HP, player team
+            Collidable::new(1000.0, 100.0, Team::Player), // no damage, 100 HP, player team
             Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
                 rotation: Quat::IDENTITY,

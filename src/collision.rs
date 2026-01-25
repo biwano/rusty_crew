@@ -11,8 +11,6 @@ pub enum Team {
 /// A component that makes an entity collidable with other collidable entities
 #[derive(Component, Clone)]
 pub struct Collidable {
-    /// The radius of the collision hitbox
-    pub hitbox: f32,
     /// The amount of damage this entity deals on collision
     pub damage: f32,
     /// Maximum hit points this entity can have
@@ -25,9 +23,8 @@ pub struct Collidable {
 
 impl Collidable {
     /// Create a new Collidable with the specified parameters
-    pub fn new(hitbox: f32, damage: f32, max_hit_points: f32, team: Team) -> Self {
+    pub fn new(damage: f32, max_hit_points: f32, team: Team) -> Self {
         Self {
-            hitbox,
             damage,
             max_hit_points,
             hit_points: max_hit_points,
