@@ -38,6 +38,8 @@ pub fn spawn_cannon_ball_projectile(
         Collidable::new(0.03, 10.0, 1.0, Team::Player), // Small hitbox, 10 damage, 1 HP, player team
         Velocity::linear(velocity),
         RigidBody::KinematicVelocityBased,
+        Collider::ball(0.03),
+        ActiveEvents::COLLISION_EVENTS,
         Mesh3d(projectile_mesh),
         MeshMaterial3d(projectile_material),
         Transform {

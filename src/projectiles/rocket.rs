@@ -39,6 +39,8 @@ pub fn spawn_rocket_projectile(
                 angular_damping: 0.0,
             },
             RigidBody::KinematicVelocityBased,
+            Collider::ball(500.0), // 0.1 world radius (500.0 * 0.0002 scale)
+            ActiveEvents::COLLISION_EVENTS,
             Transform {
                 translation: position,
                 rotation: rocket_rotation,

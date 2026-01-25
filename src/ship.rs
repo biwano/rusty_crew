@@ -14,11 +14,7 @@ impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_ship).add_systems(
             Update,
-            (
-                update_ship_velocity,
-                set_ship_rotation,
-                switch_weapon_input,
-            ),
+            (update_ship_velocity, set_ship_rotation, switch_weapon_input),
         );
     }
 }
@@ -115,6 +111,7 @@ pub fn setup_ship(
             RigidBody::KinematicVelocityBased,
             Collider::ball(50.0), // 0.5 world radius (50.0 * 0.01 scale)
             ActiveEvents::COLLISION_EVENTS,
+            ActiveCollisionTypes::KINEMATIC_KINEMATIC,
         ))
         .id();
     scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);

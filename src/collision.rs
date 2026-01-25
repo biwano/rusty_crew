@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 /// Represents the team affiliation of a collidable entity
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
@@ -48,40 +49,26 @@ impl Collidable {
     }
 }
 
-/// Check for collisions between all collidable entities
-pub fn check_collisions(
-    _commands: Commands,
-    mut collidables: Query<(Entity, &Transform, &mut Collidable)>,
+/// Check for collisions using Rapier collision events
+pub fn handle_collision_events(
+    mut collision_events: MessageReader<CollisionEvent>,
+    mut collidables: Query<&mut Collidable>,
 ) {
-    let entities: Vec<(Entity, Vec3, Collidable)> = collidables
-        .iter()
-        .map(|(entity, transform, collidable)| (entity, transform.translation, collidable.clone()))
-        .collect();
-
-    // Check collisions between all pairs
-    for i in 0..entities.len() {
-        let (entity_a, pos_a, collidable_a) = &entities[i];
-
-        for j in (i + 1)..entities.len() {
-            let (entity_b, pos_b, collidable_b) = &entities[j];
-
-            // Skip collision if entities are on the same team
-            if collidable_a.team == collidable_b.team {
-                continue;
-            }
-
-            // Check distance collision
-            let distance = pos_a.distance(*pos_b);
-            let combined_hitbox = collidable_a.hitbox + collidable_b.hitbox;
-
-            if distance < combined_hitbox {
-                // Collision detected! Apply damage to both entities
-                if let Ok([mut coll_a, mut coll_b]) =
-                    collidables.get_many_mut([*entity_a, *entity_b])
-                {
-                    coll_a.2.take_damage(collidable_b.damage);
-                    coll_b.2.take_damage(collidable_a.damage);
+    for collision_event in collision_events.read() {
+        if let CollisionEvent::Started(entity_a, entity_b, _) = collision_event {
+            // Try to get both collidables. If one of them is missing, it's not a collision we care about
+            if let Ok([mut coll_a, mut coll_b]) = collidables.get_many_mut([*entity_a, *entity_b]) {
+                // Skip collision if entities are on the same team
+                if coll_a.team == coll_b.team {
+                    continue;
                 }
+
+                // Apply damage to both entities based on the other's damage
+                let damage_a = coll_a.damage;
+                let damage_b = coll_b.damage;
+
+                coll_a.take_damage(damage_b);
+                coll_b.take_damage(damage_a);
             }
         }
     }
@@ -101,6 +88,6 @@ pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (check_collisions, despawn_dead_collidable));
+        app.add_systems(Update, (handle_collision_events, despawn_dead_collidable));
     }
 }

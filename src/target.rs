@@ -56,6 +56,9 @@ pub fn spawn_target(
             Collidable::new(0.25, 20.0, TARGET_HIT_POINTS, Team::Enemy), // 0.25 radius, 20 damage, 20 HP, enemy team
             Velocity::linear(left_velocity),
             RigidBody::KinematicVelocityBased,
+            Collider::ball(2.5), // 0.25 world radius (2.5 * 0.1 scale)
+            ActiveEvents::COLLISION_EVENTS,
+            ActiveCollisionTypes::KINEMATIC_KINEMATIC,
             Transform {
                 translation: position,
                 rotation: Quat::from_rotation_y(-std::f32::consts::PI / 2.0), // Rotate 90 degrees left to face movement direction
