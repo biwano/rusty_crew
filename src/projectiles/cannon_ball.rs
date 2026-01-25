@@ -26,7 +26,6 @@ pub fn spawn_cannon_ball_projectile(
 
     commands.spawn((
         Projectile {
-            damage: 10.0,
             acceleration: 0.0,
             agility: 0.0,
             direction: forward_direction.normalize(),

@@ -118,10 +118,6 @@ pub fn setup_ship(
             },
         ))
         .id();
-    //scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
-    /*commands.spawn(SceneRoot(asset_server.load(
-        GltfAssetLabel::Scene(0).from_asset("models/ships/spaceship.glb#Scene0"),
-    )));*/
 
     // Attach rocket launcher weapon to the ship (default weapon)
     let rocket_weapon = create_rocket_launcher(Vec3::new(0.0, 0.0, 0.0)); // Position rocket launcher at ship origin

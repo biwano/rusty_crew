@@ -79,42 +79,6 @@ impl Weapon {
         self
     }
 
-    #[allow(dead_code)]
-    pub fn set_fire_cooldown(&mut self, duration: f32) -> &mut Self {
-        self.fire_cooldown_duration = duration;
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn set_projectile_spawner(&mut self, spawner: ProjectileSpawner) -> &mut Self {
-        self.projectile_spawner = Some(spawner);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn set_mesh_spawner(&mut self, spawner: MeshSpawner) -> &mut Self {
-        self.mesh_spawner = Some(spawner);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn set_weapon_position_offset(&mut self, offset: Vec3) -> &mut Self {
-        self.weapon_position_offset = offset;
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn set_projectile_spawn_offset(&mut self, offset: Vec3) -> &mut Self {
-        self.projectile_spawn_offset = offset;
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn set_projectile_spawn_speed_vector(&mut self, speed_vector: Vec3) -> &mut Self {
-        self.projectile_spawn_speed_vector = speed_vector;
-        self
-    }
-
     pub fn can_fire(&self) -> bool {
         self.cooldown_timer <= 0.0
     }

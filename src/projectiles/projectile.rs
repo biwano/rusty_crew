@@ -5,7 +5,6 @@ use rand::Rng;
 
 #[derive(Component)]
 pub struct Projectile {
-    pub damage: f32,
     pub acceleration: f32,
     pub agility: f32,
     pub direction: Vec3,
@@ -18,7 +17,6 @@ pub struct Projectile {
 impl Default for Projectile {
     fn default() -> Self {
         Self {
-            damage: 10.0,
             acceleration: 0.0,
             agility: 0.0,
             direction: Vec3::Z,
