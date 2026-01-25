@@ -21,7 +21,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        //       .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(CollisionPlugin)
         .add_plugins(HudPlugin)
         .add_plugins(ShipPlugin)

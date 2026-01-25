@@ -17,7 +17,7 @@ pub fn create_cannon(weapon_position: Vec3) -> Weapon {
 pub fn spawn_cannon_mesh(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    scene_spawner: &mut ResMut<SceneSpawner>,
+    _scene_spawner: &mut ResMut<SceneSpawner>,
     parent_entity: Entity,
     translation: Vec3,
 ) {
@@ -30,9 +30,9 @@ pub fn spawn_cannon_mesh(
                 scale: Vec3::splat(10.0), // Scale to match ship scale
             },
             WeaponMesh,
+            SceneRoot(weapon_mesh_handle),
         ))
         .id();
-    scene_spawner.spawn_as_child(weapon_mesh_handle, weapon_mesh_entity);
     // Attach weapon mesh as a child of the parent
     commands.entity(parent_entity).add_child(weapon_mesh_entity);
 }

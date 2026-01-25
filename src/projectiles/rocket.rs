@@ -23,7 +23,7 @@ pub fn spawn_rocket_projectile(
     commands.spawn((
         Projectile {
             acceleration: 5.0, // Acceleration for rockets
-            agility: 0.5,      // Turn rate in radians per second
+            agility: 1.0,      // Turn rate in radians per second
             direction: forward_direction.normalize(),
             homing: true,          // Rockets are homing projectiles
             activation_timer: 1.0, // Start with 1 second cooldown
