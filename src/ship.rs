@@ -136,10 +136,12 @@ pub fn setup_ship(
 pub fn update_ship_velocity(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     spaceship_entity: Res<SpaceshipEntity>,
-    mut query: Query<&mut Velocity>,
+    mut query: Query<(&mut Velocity, &Transform)>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    windows: Query<&Window>,
     time: Res<Time>,
 ) {
-    if let Ok(mut velocity) = query.get_mut(spaceship_entity.0) {
+    if let Ok((mut velocity, transform)) = query.get_mut(spaceship_entity.0) {
         let acceleration_rate = 5.0; // Acceleration rate
         let mut accel_vector = Vec3::ZERO;
 
@@ -160,6 +162,42 @@ pub fn update_ship_velocity(
         }
         if keyboard_input.pressed(KeyCode::KeyD) {
             accel_vector.x += acceleration_rate;
+        }
+
+        // Viewport boundary system - prevent ship from going out of bounds
+        // Get window dimensions for resolution-independent calculations
+        if let Ok(window) = windows.single() {
+            let window_width = window.width();
+            let window_height = window.height();
+            let boundary_margin = 0.05; // Margin from viewport edge (5% of viewport) - kept for reference
+
+            // Get camera for screen coordinate calculations
+            if let Ok((camera, camera_global_transform)) = camera_query.single() {
+                // Convert world position to screen coordinates
+                if let Ok(viewport_pos) =
+                    camera.world_to_viewport(camera_global_transform, transform.translation)
+                {
+                    // Convert normalized viewport coordinates to screen pixels
+                    let screen_x = viewport_pos.x / window_width;
+                    let screen_y = viewport_pos.y / window_height;
+
+                    println!("Screen pos: ({:.01}, {:.01})", screen_x, screen_y);
+
+                    // Check X boundaries in screen pixels
+                    if screen_x > 1.0 - boundary_margin && velocity.linvel.x > 0.0 {
+                        velocity.linvel.x = 0.0; // Zero out velocity going out of bounds to the right
+                    } else if screen_x < boundary_margin && velocity.linvel.x < 0.0 {
+                        velocity.linvel.x = 0.0; // Zero out velocity going out of bounds to the left
+                    }
+
+                    // Check Y boundaries in screen pixels
+                    if screen_y > 1.0 - boundary_margin && velocity.linvel.y < 0.0 {
+                        velocity.linvel.y = 0.0; // Zero out velocity going out of bounds upward
+                    } else if screen_y < boundary_margin && velocity.linvel.y > 0.0 {
+                        velocity.linvel.y = 0.0; // Zero out velocity going out of bounds downward
+                    }
+                }
+            }
         }
 
         // Apply acceleration to velocity
