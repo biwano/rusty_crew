@@ -53,28 +53,57 @@ impl Collidable {
 pub fn handle_collision_events(
     mut collision_events: MessageReader<CollisionEvent>,
     mut collidables: Query<&mut Collidable>,
+    parents: Query<&ChildOf>,
 ) {
     for collision_event in collision_events.read() {
-        println!("Collision event: {:?}", collision_event);
-        if let CollisionEvent::Started(entity_a, entity_b, _) = collision_event {
-            println!("--------------------------------");
-            println!("entity_a: {:?}", entity_a);
-            println!("entity_b: {:?}", entity_b);
-            // Try to get both collidables. If one of them is missing, it's not a collision we care about
-            if let Ok([mut coll_a, mut coll_b]) = collidables.get_many_mut([*entity_a, *entity_b]) {
-                // Skip collision if entities are on the same team
-                println!("a");
-                if coll_a.team == coll_b.team {
+        if let CollisionEvent::Started(e1, e2, _) = collision_event {
+            let root_a = find_collidable_root(*e1, &collidables, &parents);
+            let root_b = find_collidable_root(*e2, &collidables, &parents);
+
+            if let (Some(entity_a), Some(entity_b)) = (root_a, root_b) {
+                if entity_a == entity_b {
                     continue;
                 }
 
-                // Apply damage to both entities based on the other's damage
-                let damage_a = coll_a.damage;
-                let damage_b = coll_b.damage;
+                // Try to get both collidables. If one of them is missing, it's not a collision we care about
+                if let Ok([mut coll_a, mut coll_b]) = collidables.get_many_mut([entity_a, entity_b])
+                {
+                    // Skip collision if entities are on the same team
+                    if coll_a.team == coll_b.team {
+                        continue;
+                    }
+                    println!("--------------------------------");
+                    println!("entity_a: {:?}", entity_a);
+                    println!("entity_b: {:?}", entity_b);
+                    println!("--------------------------------");
 
-                //coll_a.take_damage(damage_b);
-                //coll_b.take_damage(damage_a);
+                    // Apply damage to both entities based on the other's damage
+                    let damage_a = coll_a.damage;
+                    let damage_b = coll_b.damage;
+
+                    //coll_a.take_damage(damage_b);
+                    //coll_b.take_damage(damage_a);
+                }
             }
+        }
+    }
+}
+
+/// Helper function to find the ancestor entity that has the Collidable component
+fn find_collidable_root(
+    entity: Entity,
+    collidables: &Query<&mut Collidable>,
+    parents: &Query<&ChildOf>,
+) -> Option<Entity> {
+    let mut current = entity;
+    loop {
+        if collidables.contains(current) {
+            return Some(current);
+        }
+        if let Ok(parent) = parents.get(current) {
+            current = parent.parent();
+        } else {
+            return None;
         }
     }
 }

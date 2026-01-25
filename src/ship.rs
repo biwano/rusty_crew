@@ -124,7 +124,6 @@ pub fn setup_ship(
             ActiveEvents::COLLISION_EVENTS,
             ActiveCollisionTypes::KINEMATIC_KINEMATIC,
             SceneRoot(spaceship_handle),
-            Collider::ball(50.0),
             AsyncSceneCollider {
                 shape: Some(ComputedColliderShape::ConvexHull),
                 named_shapes: Default::default(),

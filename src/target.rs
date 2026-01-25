@@ -64,10 +64,9 @@ pub fn spawn_target(
                 rotation: Quat::from_rotation_y(-std::f32::consts::PI / 2.0), // Rotate 90 degrees left to face movement direction
                 scale: Vec3::splat(0.1),
             },
+            SceneRoot(drone_handle),
         ))
         .id();
-
-    scene_spawner.spawn_as_child(drone_handle, target_entity);
 }
 
 pub fn update_target_colors(
