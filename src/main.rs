@@ -18,6 +18,7 @@ use bevy::{
     },
 };
 
+use bevy_rapier3d::prelude::*;
 use collision::CollisionPlugin;
 use hud::HudPlugin;
 use movable::MovablePlugin;
@@ -30,6 +31,8 @@ use weapons::WeaponPlugin;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(CollisionPlugin)
         .add_plugins(HudPlugin)
         .add_plugins(MovablePlugin)

@@ -4,6 +4,7 @@ use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
 use crate::weapons::weapon::{Weapon, WeaponMesh};
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 #[derive(Component)]
 pub struct Ship;
@@ -108,6 +109,9 @@ pub fn setup_ship(
                 scale: Vec3::splat(0.01), // Scale to 1/100th size
             },
             Movable::zero(0.95), // Start with zero velocity and acceleration, damping of 0.95
+            RigidBody::KinematicPositionBased,
+            Collider::ball(50.0), // 0.5 world radius (50.0 * 0.01 scale)
+            ActiveEvents::COLLISION_EVENTS,
         ))
         .id();
     scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
