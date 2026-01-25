@@ -16,11 +16,23 @@ impl Plugin for ShipPlugin {
             Update,
             (update_ship_velocity, set_ship_rotation, switch_weapon_input),
         );
+        app.add_observer(setup_static_prop_with_convex_decomposition);
     }
 }
 
 #[derive(Resource)]
 pub struct SpaceshipEntity(pub Entity);
+
+pub(crate) fn setup_static_prop_with_convex_decomposition(
+    add: On<Add, Ship>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+) {
+    let ship_mesh_handle: Handle<Mesh> = asset_server.load("models/ships/spaceship.glb#Mesh0");
+    commands
+        .entity(add.entity)
+        .insert(AsyncCollider(ComputedColliderShape::ConvexHull));
+}
 
 /// Attaches a weapon to a ship entity, including spawning the weapon mesh if available
 pub fn attach_weapon(
@@ -109,12 +121,20 @@ pub fn setup_ship(
                 angular_damping: 0.0,
             },
             RigidBody::KinematicVelocityBased,
-            Collider::ball(50.0), // 0.5 world radius (50.0 * 0.01 scale)
             ActiveEvents::COLLISION_EVENTS,
             ActiveCollisionTypes::KINEMATIC_KINEMATIC,
+            SceneRoot(spaceship_handle),
+            Collider::ball(50.0),
+            AsyncSceneCollider {
+                shape: Some(ComputedColliderShape::ConvexHull),
+                named_shapes: Default::default(),
+            },
         ))
         .id();
-    scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
+    //scene_spawner.spawn_as_child(spaceship_handle, spaceship_entity);
+    /*commands.spawn(SceneRoot(asset_server.load(
+        GltfAssetLabel::Scene(0).from_asset("models/ships/spaceship.glb#Scene0"),
+    )));*/
 
     // Attach rocket launcher weapon to the ship (default weapon)
     let rocket_weapon = create_rocket_launcher(Vec3::new(0.0, 0.0, 0.0)); // Position rocket launcher at ship origin

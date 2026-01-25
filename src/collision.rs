@@ -55,10 +55,15 @@ pub fn handle_collision_events(
     mut collidables: Query<&mut Collidable>,
 ) {
     for collision_event in collision_events.read() {
+        println!("Collision event: {:?}", collision_event);
         if let CollisionEvent::Started(entity_a, entity_b, _) = collision_event {
+            println!("--------------------------------");
+            println!("entity_a: {:?}", entity_a);
+            println!("entity_b: {:?}", entity_b);
             // Try to get both collidables. If one of them is missing, it's not a collision we care about
             if let Ok([mut coll_a, mut coll_b]) = collidables.get_many_mut([*entity_a, *entity_b]) {
                 // Skip collision if entities are on the same team
+                println!("a");
                 if coll_a.team == coll_b.team {
                     continue;
                 }
@@ -67,8 +72,8 @@ pub fn handle_collision_events(
                 let damage_a = coll_a.damage;
                 let damage_b = coll_b.damage;
 
-                coll_a.take_damage(damage_b);
-                coll_b.take_damage(damage_a);
+                //coll_a.take_damage(damage_b);
+                //coll_b.take_damage(damage_a);
             }
         }
     }
