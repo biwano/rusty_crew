@@ -59,7 +59,6 @@ rusty_crew/
 │       ├── glb files (3d models)
 ├── src/
 │   ├── main.rs              # Main game entry point
-│   ├── movable.rs           # Movable entity components
 │   ├── projectile.rs        # Projectile system and components
 │   ├── ship.rs              # Ship entity and behavior
 │   ├── starfield.rs         # Starfield background system

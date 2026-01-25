@@ -1,5 +1,5 @@
-use crate::movable::Movable;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 /// Type alias for projectile spawner functions
 pub type ProjectileSpawner = fn(
@@ -134,7 +134,7 @@ pub fn activate_weapon(
     mut weapons: Query<&mut Weapon>,
     spaceship_entity: Res<crate::ship::SpaceshipEntity>,
     transforms: Query<&Transform>,
-    movables: Query<&Movable>,
+    velocities: Query<&Velocity>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -148,14 +148,14 @@ pub fn activate_weapon(
             // Check if weapon can fire (cooldown has passed)
             if weapon.can_fire() {
                 // Get spaceship position and velocity
-                if let (Ok(spaceship_transform), Ok(ship_movable)) = (
+                if let (Ok(spaceship_transform), Ok(ship_velocity)) = (
                     transforms.get(spaceship_entity.0),
-                    movables.get(spaceship_entity.0),
+                    velocities.get(spaceship_entity.0),
                 ) {
                     // Calculate projectile velocity: ship velocity + weapon's spawn speed vector (rotated with ship)
                     let forward_direction =
                         spaceship_transform.rotation * weapon.projectile_spawn_speed_vector;
-                    let projectile_velocity = ship_movable.velocity + forward_direction;
+                    let projectile_velocity = ship_velocity.linvel + forward_direction;
 
                     // Calculate weapon position and projectile spawn position (rotated with ship)
                     let rotated_weapon_offset =

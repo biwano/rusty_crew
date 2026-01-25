@@ -1,6 +1,6 @@
-use crate::movable::Movable;
 use crate::target::Target;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 use rand::Rng;
 
 #[derive(Component)]
@@ -80,14 +80,14 @@ pub fn select_projectile_targets(
 }
 
 pub fn apply_projectile_acceleration(
-    mut projectiles: Query<(&Projectile, &mut Movable)>,
+    mut projectiles: Query<(&Projectile, &mut Velocity)>,
     time: Res<Time>,
 ) {
-    for (projectile, mut movable) in projectiles.iter_mut() {
+    for (projectile, mut velocity) in projectiles.iter_mut() {
         if projectile.homing && projectile.activation_timer <= 0.0 {
             // Apply acceleration in the direction the projectile is pointing
             let acceleration_vector = projectile.direction * projectile.acceleration;
-            movable.velocity += acceleration_vector * time.delta_secs();
+            velocity.linvel += acceleration_vector * time.delta_secs();
         }
     }
 }

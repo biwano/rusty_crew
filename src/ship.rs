@@ -1,5 +1,4 @@
 use crate::collision::{Collidable, Team};
-use crate::movable::Movable;
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
 use crate::weapons::weapon::{Weapon, WeaponMesh};
@@ -16,7 +15,7 @@ impl Plugin for ShipPlugin {
         app.add_systems(Startup, setup_ship).add_systems(
             Update,
             (
-                set_ship_acceleration,
+                update_ship_velocity,
                 set_ship_rotation,
                 switch_weapon_input,
             ),
@@ -108,8 +107,12 @@ pub fn setup_ship(
                 rotation: Quat::IDENTITY,
                 scale: Vec3::splat(0.01), // Scale to 1/100th size
             },
-            Movable::zero(0.95), // Start with zero velocity and acceleration, damping of 0.95
-            RigidBody::KinematicPositionBased,
+            Velocity::default(),
+            Damping {
+                linear_damping: 1.0,
+                angular_damping: 0.0,
+            },
+            RigidBody::KinematicVelocityBased,
             Collider::ball(50.0), // 0.5 world radius (50.0 * 0.01 scale)
             ActiveEvents::COLLISION_EVENTS,
         ))
@@ -130,12 +133,13 @@ pub fn setup_ship(
     commands.insert_resource(SpaceshipEntity(spaceship_entity));
 }
 
-pub fn set_ship_acceleration(
+pub fn update_ship_velocity(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     spaceship_entity: Res<SpaceshipEntity>,
-    mut movables: Query<&mut Movable>,
+    mut query: Query<&mut Velocity>,
+    time: Res<Time>,
 ) {
-    if let Ok(mut movable) = movables.get_mut(spaceship_entity.0) {
+    if let Ok(mut velocity) = query.get_mut(spaceship_entity.0) {
         let acceleration_rate = 5.0; // Acceleration rate
         let mut accel_vector = Vec3::ZERO;
 
@@ -158,8 +162,8 @@ pub fn set_ship_acceleration(
             accel_vector.x += acceleration_rate;
         }
 
-        // Set acceleration vector
-        movable.acceleration = accel_vector;
+        // Apply acceleration to velocity
+        velocity.linvel += accel_vector * time.delta_secs();
     }
 }
 

@@ -1,27 +1,16 @@
 mod collision;
 mod hud;
-mod movable;
 mod projectiles;
 mod ship;
 mod starfield;
 mod target;
 mod weapons;
 
-use bevy::{
-    color::palettes::css::*,
-    pbr::wireframe::{NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframePlugin},
-    prelude::*,
-    render::{
-        RenderPlugin,
-        render_resource::WgpuFeatures,
-        settings::{RenderCreation, WgpuSettings},
-    },
-};
+use bevy::prelude::*;
 
 use bevy_rapier3d::prelude::*;
 use collision::CollisionPlugin;
 use hud::HudPlugin;
-use movable::MovablePlugin;
 use projectiles::ProjectilePlugin;
 use ship::ShipPlugin;
 use starfield::StarfieldPlugin;
@@ -35,7 +24,6 @@ fn main() {
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(CollisionPlugin)
         .add_plugins(HudPlugin)
-        .add_plugins(MovablePlugin)
         .add_plugins(ShipPlugin)
         .add_plugins(WeaponPlugin)
         .add_plugins(ProjectilePlugin)

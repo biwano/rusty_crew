@@ -1,7 +1,7 @@
 use crate::collision::{Collidable, Team};
-use crate::movable::Movable;
 use crate::projectiles::Projectile;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 /// Spawns a rocket projectile using the rocket.glb mesh
 pub fn spawn_rocket_projectile(
@@ -33,7 +33,12 @@ pub fn spawn_rocket_projectile(
                 mesh_rotation_offset: Quat::from_rotation_y(std::f32::consts::PI), // 90-degree Y rotation for rocket mesh
             },
             Collidable::new(0.1, 25.0, 1.0, Team::Player), // Larger hitbox, 25 damage, 1 HP, player team
-            Movable::with_velocity(velocity, 0.99),
+            Velocity::linear(velocity),
+            Damping {
+                linear_damping: 0.6,
+                angular_damping: 0.0,
+            },
+            RigidBody::KinematicVelocityBased,
             Transform {
                 translation: position,
                 rotation: rocket_rotation,

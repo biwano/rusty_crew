@@ -1,8 +1,8 @@
 use crate::collision::{Collidable, Team};
 use crate::hud::PlayerScore;
-use crate::movable::Movable;
 use crate::projectiles::Projectile;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 const TARGET_HIT_POINTS: f32 = 20.0;
 
@@ -54,7 +54,8 @@ pub fn spawn_target(
         .spawn((
             Target::default(),
             Collidable::new(0.25, 20.0, TARGET_HIT_POINTS, Team::Enemy), // 0.25 radius, 20 damage, 20 HP, enemy team
-            Movable::with_velocity(left_velocity, 1.0), // No damping, constant velocity
+            Velocity::linear(left_velocity),
+            RigidBody::KinematicVelocityBased,
             Transform {
                 translation: position,
                 rotation: Quat::from_rotation_y(-std::f32::consts::PI / 2.0), // Rotate 90 degrees left to face movement direction

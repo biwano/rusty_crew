@@ -1,7 +1,7 @@
 use crate::collision::{Collidable, Team};
-use crate::movable::Movable;
 use crate::projectiles::Projectile;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 /// Spawns a cannon ball projectile using mesh information from this module
 pub fn spawn_cannon_ball_projectile(
@@ -36,7 +36,8 @@ pub fn spawn_cannon_ball_projectile(
             mesh_rotation_offset: Quat::IDENTITY, // No mesh offset for cannon balls
         },
         Collidable::new(0.03, 10.0, 1.0, Team::Player), // Small hitbox, 10 damage, 1 HP, player team
-        Movable::with_velocity(velocity, 1.0),
+        Velocity::linear(velocity),
+        RigidBody::KinematicVelocityBased,
         Mesh3d(projectile_mesh),
         MeshMaterial3d(projectile_material),
         Transform {
