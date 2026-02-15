@@ -132,61 +132,51 @@ pub fn update_weapon_cooldowns(mut weapons: Query<&mut Weapon>, time: Res<Time>)
     }
 }
 
-pub fn activate_weapon(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut weapons: Query<&mut Weapon>,
-    spaceship_entity: Res<crate::ship::SpaceshipEntity>,
-    transforms: Query<&Transform>,
-    velocities: Query<&Velocity>,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
-    mut scene_spawner: ResMut<SceneSpawner>,
+pub fn fire_weapon(
+    weapon: &mut Weapon,
+    owner_entity: Entity,
+    transforms: &Query<&Transform>,
+    velocities: &Query<&Velocity>,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    asset_server: &Res<AssetServer>,
+    scene_spawner: &mut ResMut<SceneSpawner>,
 ) {
-    // Check if space is pressed (can be held down)
-    if keyboard_input.pressed(KeyCode::Space) {
-        // Get the weapon attached to the spaceship
-        if let Ok(mut weapon) = weapons.get_mut(spaceship_entity.0) {
-            // Check if weapon can fire (cooldown has passed)
-            if weapon.can_fire() {
-                // Get spaceship position and velocity
-                if let (Ok(spaceship_transform), Ok(ship_velocity)) = (
-                    transforms.get(spaceship_entity.0),
-                    velocities.get(spaceship_entity.0),
-                ) {
-                    // Calculate projectile velocity: ship velocity + weapon's spawn speed vector (rotated with ship)
-                    let forward_direction =
-                        spaceship_transform.rotation * weapon.projectile_spawn_speed_vector;
-                    let projectile_velocity = ship_velocity.linvel + forward_direction;
+    // Check if weapon can fire (cooldown has passed)
+    if weapon.can_fire() {
+        // Get owner position and velocity
+        if let (Ok(owner_transform), Ok(owner_velocity)) = (
+            transforms.get(owner_entity),
+            velocities.get(owner_entity),
+        ) {
+            // Calculate projectile velocity: ship velocity + weapon's spawn speed vector (rotated with ship)
+            let forward_direction = owner_transform.rotation * weapon.projectile_spawn_speed_vector;
+            let projectile_velocity = owner_velocity.linvel + forward_direction;
 
-                    // Calculate weapon position and projectile spawn position (rotated with ship)
-                    let rotated_weapon_offset =
-                        spaceship_transform.rotation * weapon.weapon_position_offset;
-                    let rotated_projectile_offset =
-                        spaceship_transform.rotation * weapon.projectile_spawn_offset;
+            // Calculate weapon position and projectile spawn position (rotated with ship)
+            let rotated_weapon_offset = owner_transform.rotation * weapon.weapon_position_offset;
+            let rotated_projectile_offset = owner_transform.rotation * weapon.projectile_spawn_offset;
 
-                    let weapon_position = spaceship_transform.translation + rotated_weapon_offset;
-                    let projectile_position = weapon_position + rotated_projectile_offset;
+            let weapon_position = owner_transform.translation + rotated_weapon_offset;
+            let projectile_position = weapon_position + rotated_projectile_offset;
 
-                    // Spawn projectile using the weapon's projectile spawner
-                    if let Some(spawner) = weapon.projectile_spawner {
-                        spawner(
-                            &mut commands,
-                            &mut meshes,
-                            &mut materials,
-                            &asset_server,
-                            &mut scene_spawner,
-                            projectile_position,
-                            projectile_velocity,
-                            spaceship_transform.rotation,
-                        );
-                    }
-
-                    // Start cooldown
-                    weapon.start_cooldown();
-                }
+            // Spawn projectile using the weapon's projectile spawner
+            if let Some(spawner) = weapon.projectile_spawner {
+                spawner(
+                    commands,
+                    meshes,
+                    materials,
+                    asset_server,
+                    scene_spawner,
+                    projectile_position,
+                    projectile_velocity,
+                    owner_transform.rotation,
+                );
             }
+
+            // Start cooldown
+            weapon.start_cooldown();
         }
     }
 }
@@ -195,6 +185,6 @@ pub struct WeaponPlugin;
 
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (update_weapon_cooldowns, activate_weapon));
+        app.add_systems(Update, update_weapon_cooldowns);
     }
 }

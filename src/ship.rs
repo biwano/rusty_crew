@@ -1,7 +1,7 @@
 use crate::collision::{Collidable, Team};
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
-use crate::weapons::weapon::{attach_weapon, Weapon, WeaponMesh};
+use crate::weapons::weapon::{attach_weapon, fire_weapon, Weapon, WeaponMesh};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -14,7 +14,12 @@ impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_ship).add_systems(
             Update,
-            (update_ship_velocity, set_ship_rotation, switch_weapon_input),
+            (
+                update_ship_velocity,
+                set_ship_rotation,
+                switch_weapon_input,
+                activate_weapon,
+            ),
         );
     }
 }
@@ -238,5 +243,36 @@ pub fn switch_weapon_input(
             &weapon_meshes,
             rocket_weapon,
         );
+    }
+}
+
+pub fn activate_weapon(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut weapons: Query<&mut Weapon>,
+    spaceship_entity: Res<SpaceshipEntity>,
+    transforms: Query<&Transform>,
+    velocities: Query<&Velocity>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut scene_spawner: ResMut<SceneSpawner>,
+) {
+    // Check if space is pressed (can be held down)
+    if keyboard_input.pressed(KeyCode::Space) {
+        // Get the weapon attached to the spaceship
+        if let Ok(mut weapon) = weapons.get_mut(spaceship_entity.0) {
+            fire_weapon(
+                &mut weapon,
+                spaceship_entity.0,
+                &transforms,
+                &velocities,
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                &asset_server,
+                &mut scene_spawner,
+            );
+        }
     }
 }
