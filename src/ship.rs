@@ -181,8 +181,6 @@ pub fn update_ship_velocity(
                     let screen_x = viewport_pos.x / window_width;
                     let screen_y = viewport_pos.y / window_height;
 
-                    println!("Screen pos: ({:.01}, {:.01})", screen_x, screen_y);
-
                     // Check X boundaries in screen pixels
                     if screen_x > 1.0 - boundary_margin && velocity.linvel.x > 0.0 {
                         velocity.linvel.x = 0.0; // Zero out velocity going out of bounds to the right
