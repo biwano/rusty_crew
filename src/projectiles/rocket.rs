@@ -27,7 +27,7 @@ pub fn spawn_rocket_projectile(
             direction: forward_direction.normalize(),
             homing: true,          // Rockets are homing projectiles
             activation_timer: 1.0, // Start with 1 second cooldown
-            target: None,          // No target initially
+            enemy: None,          // No enemy initially
             mesh_rotation_offset: Quat::from_rotation_y(std::f32::consts::PI), // 90-degree Y rotation for rocket mesh
         },
         Collidable::new(25.0, 1.0, Team::Player), // 25 damage, 1 HP, player team

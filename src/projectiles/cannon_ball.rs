@@ -31,7 +31,7 @@ pub fn spawn_cannon_ball_projectile(
             direction: forward_direction.normalize(),
             homing: false,
             activation_timer: 0.0,
-            target: None,
+            enemy: None,
             mesh_rotation_offset: Quat::IDENTITY, // No mesh offset for cannon balls
         },
         Collidable::new(10.0, 1.0, Team::Player), // 10 damage, 1 HP, player team

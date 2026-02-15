@@ -3,7 +3,7 @@ mod hud;
 mod projectiles;
 mod ship;
 mod starfield;
-mod target;
+mod enemies;
 mod weapons;
 
 use bevy::prelude::*;
@@ -14,7 +14,7 @@ use hud::HudPlugin;
 use projectiles::ProjectilePlugin;
 use ship::ShipPlugin;
 use starfield::StarfieldPlugin;
-use target::TargetPlugin;
+use enemies::EnemiesPlugin;
 use weapons::WeaponPlugin;
 
 fn main() {
@@ -28,7 +28,7 @@ fn main() {
         .add_plugins(WeaponPlugin)
         .add_plugins(ProjectilePlugin)
         .add_plugins(StarfieldPlugin)
-        .add_plugins(TargetPlugin)
+        .add_plugins(EnemiesPlugin)
         .add_systems(Startup, setup)
         .run();
 }

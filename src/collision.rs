@@ -5,7 +5,7 @@ use bevy_rapier3d::prelude::*;
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Team {
     Player = 1, // Ship and projectiles fired by ship
-    Enemy = 2,  // Targets and their projectiles
+    Enemy = 2,  // Enemies and their projectiles
 }
 
 /// A component that makes an entity collidable with other collidable entities

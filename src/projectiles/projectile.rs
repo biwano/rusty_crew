@@ -1,4 +1,4 @@
-use crate::target::Target;
+use crate::enemies::Enemy;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use rand::Rng;
@@ -10,7 +10,7 @@ pub struct Projectile {
     pub direction: Vec3,
     pub homing: bool,
     pub activation_timer: f32,
-    pub target: Option<Entity>,
+    pub enemy: Option<Entity>,
     pub mesh_rotation_offset: Quat,
 }
 
@@ -22,7 +22,7 @@ impl Default for Projectile {
             direction: Vec3::Z,
             homing: false,
             activation_timer: 0.0,
-            target: None,
+            enemy: None,
             mesh_rotation_offset: Quat::IDENTITY,
         }
     }
@@ -57,22 +57,22 @@ pub fn update_projectile_activation_timers(
     }
 }
 
-pub fn select_projectile_targets(
+pub fn select_projectile_enemies(
     mut projectiles: Query<(Entity, &mut Projectile, &Transform)>,
-    targets: Query<Entity, (With<Target>, With<Transform>)>,
+    enemies: Query<Entity, (With<Enemy>, With<Transform>)>,
 ) {
     let mut rng = rand::thread_rng();
-    let target_entities: Vec<Entity> = targets.iter().collect();
+    let enemy_entities: Vec<Entity> = enemies.iter().collect();
 
-    if target_entities.is_empty() {
+    if enemy_entities.is_empty() {
         return;
     }
 
     for (_projectile_entity, mut projectile, _transform) in projectiles.iter_mut() {
-        if projectile.homing && projectile.activation_timer <= 0.0 && projectile.target.is_none() {
-            // Randomly select a target
-            let random_index = rng.gen_range(0..target_entities.len());
-            projectile.target = Some(target_entities[random_index]);
+        if projectile.homing && projectile.activation_timer <= 0.0 && projectile.enemy.is_none() {
+            // Randomly select an enemy
+            let random_index = rng.gen_range(0..enemy_entities.len());
+            projectile.enemy = Some(enemy_entities[random_index]);
         }
     }
 }
@@ -90,9 +90,9 @@ pub fn apply_projectile_acceleration(
     }
 }
 
-pub fn steer_projectiles_toward_target(
+pub fn steer_projectiles_toward_enemy(
     mut projectiles: Query<(&mut Projectile, &mut Transform)>,
-    targets: Query<&Transform, (With<Target>, Without<Projectile>)>,
+    enemies: Query<&Transform, (With<Enemy>, Without<Projectile>)>,
     time: Res<Time>,
 ) {
     for (mut projectile, mut transform) in projectiles.iter_mut() {
@@ -100,14 +100,14 @@ pub fn steer_projectiles_toward_target(
             continue;
         }
 
-        if let Some(target_entity) = projectile.target {
-            // Check if target still exists
-            if let Ok(target_transform) = targets.get(target_entity) {
+        if let Some(enemy_entity) = projectile.enemy {
+            // Check if enemy still exists
+            if let Ok(enemy_transform) = enemies.get(enemy_entity) {
                 let projectile_pos = transform.translation;
-                let target_pos = target_transform.translation;
+                let enemy_pos = enemy_transform.translation;
 
-                // Calculate desired direction to target
-                let desired_direction = (target_pos - projectile_pos).normalize();
+                // Calculate desired direction to enemy
+                let desired_direction = (enemy_pos - projectile_pos).normalize();
 
                 // Rotate current direction toward desired direction using agility
                 let current_direction = projectile.direction;
@@ -118,7 +118,7 @@ pub fn steer_projectiles_toward_target(
                     let max_rotation = projectile.agility * time.delta_secs();
                     let rotation_amount = angle_between.min(max_rotation);
 
-                    // Use slerp to rotate toward target
+                    // Use slerp to rotate toward enemy
                     let t = rotation_amount / angle_between;
                     projectile.direction = current_direction.lerp(desired_direction, t).normalize();
 
@@ -133,7 +133,7 @@ pub fn steer_projectiles_toward_target(
                             temp_transform.rotation * projectile.mesh_rotation_offset;
                     }
                 } else {
-                    // Already pointing at target, just update direction
+                    // Already pointing at enemy, just update direction
                     projectile.direction = desired_direction;
                     // Update rotation to match
                     let mut temp_transform = Transform::IDENTITY;
@@ -142,8 +142,8 @@ pub fn steer_projectiles_toward_target(
                     transform.rotation = temp_transform.rotation * projectile.mesh_rotation_offset;
                 }
             } else {
-                // Target was despawned, clear target
-                projectile.target = None;
+                // Enemy was despawned, clear enemy
+                projectile.enemy = None;
             }
         }
     }
@@ -157,9 +157,9 @@ impl Plugin for ProjectilePlugin {
             Update,
             (
                 update_projectile_activation_timers,
-                select_projectile_targets,
+                select_projectile_enemies,
                 apply_projectile_acceleration,
-                steer_projectiles_toward_target,
+                steer_projectiles_toward_enemy,
                 despawn_out_of_bounds_projectiles,
             )
                 .chain(),
