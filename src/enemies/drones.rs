@@ -1,6 +1,6 @@
 use crate::collision::{Collidable, Team};
 use crate::weapons::cannon::create_cannon;
-use crate::weapons::weapon::{attach_weapon, fire_weapon, Weapon};
+use crate::weapons::weapon::{Weapon, attach_weapon, fire_weapon};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -67,7 +67,9 @@ pub fn spawn_drone(
         .id();
 
     // Attach cannon to the drone, rotated 90 degrees around Y axis
-    let cannon = create_cannon(Vec3::ZERO);
+    let mut cannon = create_cannon(Vec3::ZERO);
+    cannon.fire_cooldown_duration *= 50.0; // Drones fire 10x slower than the default cannon
+    cannon.projectile_spawn_speed_vector *= 0.1; // Projectiles are 10x slower
     attach_weapon(
         commands,
         asset_server,
