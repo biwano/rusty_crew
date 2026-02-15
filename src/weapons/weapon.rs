@@ -1,3 +1,4 @@
+use crate::collision::{Collidable, Team};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -11,6 +12,7 @@ pub type ProjectileSpawner = fn(
     Vec3, // position
     Vec3, // velocity
     Quat, // rotation
+    Team, // team
 );
 
 /// Type alias for mesh spawner functions
@@ -36,6 +38,7 @@ pub struct Weapon {
     pub weapon_position_offset: Vec3, // Offset from ship where weapon is positioned
     pub projectile_spawn_offset: Vec3, // Offset from weapon position where projectiles spawn
     pub projectile_spawn_speed_vector: Vec3, // Base speed vector for projectiles (before rotation)
+    pub weapon_rotation: Quat,        // Rotation of the weapon relative to the ship
 }
 
 impl Weapon {
@@ -48,6 +51,7 @@ impl Weapon {
             weapon_position_offset: Vec3::ZERO, // Default: weapon at ship origin
             projectile_spawn_offset: Vec3::ZERO, // Default: spawn at weapon position
             projectile_spawn_speed_vector: Vec3::new(10.0, 0.0, 0.0), // Default: 10 units forward
+            weapon_rotation: Quat::IDENTITY,
         }
     }
 
@@ -96,10 +100,13 @@ pub fn attach_weapon(
     asset_server: &Res<AssetServer>,
     scene_spawner: &mut ResMut<SceneSpawner>,
     entity: Entity,
-    weapon: Weapon,
+    mut weapon: Weapon,
     rotation: Quat,
     scale: Vec3,
 ) {
+    // Store weapon rotation in the weapon component
+    weapon.weapon_rotation = rotation;
+
     // Store position offset and mesh spawner before moving weapon
     let position_offset = weapon.weapon_position_offset;
     let mesh_spawner = weapon.mesh_spawner;
@@ -137,6 +144,7 @@ pub fn fire_weapon(
     owner_entity: Entity,
     transforms: &Query<&Transform>,
     velocities: &Query<&Velocity>,
+    collidables: &Query<&Collidable>,
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
@@ -145,18 +153,20 @@ pub fn fire_weapon(
 ) {
     // Check if weapon can fire (cooldown has passed)
     if weapon.can_fire() {
-        // Get owner position and velocity
-        if let (Ok(owner_transform), Ok(owner_velocity)) = (
+        // Get owner position, velocity and team
+        if let (Ok(owner_transform), Ok(owner_velocity), Ok(owner_collidable)) = (
             transforms.get(owner_entity),
             velocities.get(owner_entity),
+            collidables.get(owner_entity),
         ) {
-            // Calculate projectile velocity: ship velocity + weapon's spawn speed vector (rotated with ship)
-            let forward_direction = owner_transform.rotation * weapon.projectile_spawn_speed_vector;
+            // Calculate projectile velocity: ship velocity + weapon's spawn speed vector (rotated with ship and weapon)
+            let combined_rotation = owner_transform.rotation * weapon.weapon_rotation;
+            let forward_direction = combined_rotation * weapon.projectile_spawn_speed_vector;
             let projectile_velocity = owner_velocity.linvel + forward_direction;
 
             // Calculate weapon position and projectile spawn position (rotated with ship)
             let rotated_weapon_offset = owner_transform.rotation * weapon.weapon_position_offset;
-            let rotated_projectile_offset = owner_transform.rotation * weapon.projectile_spawn_offset;
+            let rotated_projectile_offset = combined_rotation * weapon.projectile_spawn_offset;
 
             let weapon_position = owner_transform.translation + rotated_weapon_offset;
             let projectile_position = weapon_position + rotated_projectile_offset;
@@ -171,7 +181,8 @@ pub fn fire_weapon(
                     scene_spawner,
                     projectile_position,
                     projectile_velocity,
-                    owner_transform.rotation,
+                    combined_rotation,
+                    owner_collidable.team,
                 );
             }
 

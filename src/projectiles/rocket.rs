@@ -13,6 +13,7 @@ pub fn spawn_rocket_projectile(
     position: Vec3,
     velocity: Vec3,
     rotation: Quat,
+    team: Team,
 ) {
     let rocket_scene_handle = asset_server.load("models/projectiles/rocket.glb#Scene0");
 
@@ -30,7 +31,7 @@ pub fn spawn_rocket_projectile(
             enemy: None,          // No enemy initially
             mesh_rotation_offset: Quat::from_rotation_y(std::f32::consts::PI), // 90-degree Y rotation for rocket mesh
         },
-        Collidable::new(25.0, 1.0, Team::Player), // 25 damage, 1 HP, player team
+        Collidable::new(25.0, 1.0, team), // 25 damage, 1 HP, use passed team
         Velocity::linear(velocity),
         Damping {
             linear_damping: 0.6,

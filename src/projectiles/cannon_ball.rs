@@ -13,6 +13,7 @@ pub fn spawn_cannon_ball_projectile(
     position: Vec3,
     velocity: Vec3,
     rotation: Quat,
+    team: Team,
 ) {
     let projectile_mesh = meshes.add(Sphere::new(0.03));
     let projectile_material = materials.add(StandardMaterial {
@@ -34,7 +35,7 @@ pub fn spawn_cannon_ball_projectile(
             enemy: None,
             mesh_rotation_offset: Quat::IDENTITY, // No mesh offset for cannon balls
         },
-        Collidable::new(10.0, 1.0, Team::Player), // 10 damage, 1 HP, player team
+        Collidable::new(10.0, 1.0, team), // 10 damage, 1 HP, use passed team
         Velocity::linear(velocity),
         RigidBody::KinematicVelocityBased,
         Collider::ball(0.03),
