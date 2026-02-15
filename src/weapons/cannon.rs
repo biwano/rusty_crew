@@ -20,14 +20,16 @@ pub fn spawn_cannon_mesh(
     _scene_spawner: &mut ResMut<SceneSpawner>,
     parent_entity: Entity,
     translation: Vec3,
+    rotation: Quat,
+    scale: Vec3,
 ) {
     let weapon_mesh_handle = asset_server.load("models/weapons/cannon.glb#Scene0");
     let weapon_mesh_entity = commands
         .spawn((
             Transform {
                 translation, // Position relative to ship
-                rotation: Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2), // Rotate 90 degrees around Z axis
-                scale: Vec3::splat(10.0), // Scale to match ship scale
+                rotation: rotation * Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2), // Combine requested rotation with base rotation
+                scale,
             },
             WeaponMesh,
             SceneRoot(weapon_mesh_handle),

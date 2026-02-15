@@ -1,11 +1,13 @@
+use crate::collision::{Collidable, Team};
+use crate::weapons::cannon::create_cannon;
+use crate::weapons::weapon::attach_weapon;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-use crate::collision::{Collidable, Team};
 
 pub fn spawn_drone(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    _scene_spawner: &mut ResMut<SceneSpawner>,
+    scene_spawner: &mut ResMut<SceneSpawner>,
     position: Vec3,
 ) {
     // Load the drone model
@@ -14,7 +16,7 @@ pub fn spawn_drone(
     // Enemies move slowly to the left (negative X direction)
     let left_velocity = Vec3::new(-0.2, 0.0, 0.0);
 
-    let _enemy_entity = commands
+    let drone_entity = commands
         .spawn((
             super::Enemy::default(),
             Collidable::new(20.0, super::ENEMY_HIT_POINTS, Team::Enemy), // 20 damage, 20 HP, enemy team
@@ -34,4 +36,16 @@ pub fn spawn_drone(
             },
         ))
         .id();
+
+    // Attach cannon to the drone, rotated 90 degrees around Y axis
+    let cannon = create_cannon(Vec3::ZERO);
+    attach_weapon(
+        commands,
+        asset_server,
+        scene_spawner,
+        drone_entity,
+        cannon,
+        Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2),
+        Vec3::splat(1.0),
+    );
 }

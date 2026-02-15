@@ -20,6 +20,8 @@ pub type MeshSpawner = fn(
     &mut ResMut<SceneSpawner>,
     Entity, // parent entity
     Vec3,   // translation relative to parent
+    Quat,   // rotation relative to parent
+    Vec3,   // scale
 );
 
 #[derive(Component)]
@@ -85,6 +87,37 @@ impl Weapon {
 
     pub fn start_cooldown(&mut self) {
         self.cooldown_timer = self.fire_cooldown_duration;
+    }
+}
+
+/// Attaches a weapon to an entity, including spawning the weapon mesh if available
+pub fn attach_weapon(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    scene_spawner: &mut ResMut<SceneSpawner>,
+    entity: Entity,
+    weapon: Weapon,
+    rotation: Quat,
+    scale: Vec3,
+) {
+    // Store position offset and mesh spawner before moving weapon
+    let position_offset = weapon.weapon_position_offset;
+    let mesh_spawner = weapon.mesh_spawner;
+
+    // Add weapon component to the entity
+    commands.entity(entity).insert(weapon);
+
+    // Spawn weapon mesh as a child of the entity using the weapon's mesh spawner
+    if let Some(spawner) = mesh_spawner {
+        spawner(
+            commands,
+            asset_server,
+            scene_spawner,
+            entity,
+            position_offset,
+            rotation,
+            scale,
+        );
     }
 }
 

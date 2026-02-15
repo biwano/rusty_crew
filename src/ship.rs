@@ -1,7 +1,7 @@
 use crate::collision::{Collidable, Team};
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
-use crate::weapons::weapon::{Weapon, WeaponMesh};
+use crate::weapons::weapon::{attach_weapon, Weapon, WeaponMesh};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -21,33 +21,6 @@ impl Plugin for ShipPlugin {
 
 #[derive(Resource)]
 pub struct SpaceshipEntity(pub Entity);
-
-/// Attaches a weapon to a ship entity, including spawning the weapon mesh if available
-pub fn attach_weapon(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-    scene_spawner: &mut ResMut<SceneSpawner>,
-    ship_entity: Entity,
-    weapon: Weapon,
-) {
-    // Store position offset and mesh spawner before moving weapon
-    let position_offset = weapon.weapon_position_offset;
-    let mesh_spawner = weapon.mesh_spawner;
-
-    // Add weapon component to the ship entity
-    commands.entity(ship_entity).insert(weapon);
-
-    // Spawn weapon mesh as a child of the ship using the weapon's mesh spawner
-    if let Some(spawner) = mesh_spawner {
-        spawner(
-            commands,
-            asset_server,
-            scene_spawner,
-            ship_entity,
-            position_offset,
-        );
-    }
-}
 
 /// Removes the current weapon from a ship entity, including despawning weapon mesh
 pub fn remove_weapon(
@@ -76,13 +49,15 @@ pub fn switch_weapon(
     // Remove current weapon
     remove_weapon(commands, ship_entity, weapon_meshes);
 
-    // Attach new weapon
+    // Attach new weapon with default rotation and scale
     attach_weapon(
         commands,
         asset_server,
         scene_spawner,
         ship_entity,
         new_weapon,
+        Quat::IDENTITY,
+        Vec3::splat(10.0),
     );
 }
 
@@ -127,6 +102,8 @@ pub fn setup_ship(
         &mut scene_spawner,
         spaceship_entity,
         rocket_weapon,
+        Quat::IDENTITY,
+        Vec3::splat(10.0),
     );
 
     // Store spaceship entity for movement system
