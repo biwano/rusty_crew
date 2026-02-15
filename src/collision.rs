@@ -21,6 +21,10 @@ pub struct Collidable {
     pub team: Team,
 }
 
+/// A marker component for entities that should not be automatically despawned when they die
+#[derive(Component)]
+pub struct Persistent;
+
 impl Collidable {
     /// Create a new Collidable with the specified parameters
     pub fn new(damage: f32, max_hit_points: f32, team: Team) -> Self {
@@ -137,7 +141,10 @@ fn find_collidable_root(
 }
 
 /// Despawn any collidable entities that have died (hit_points <= 0)
-pub fn despawn_dead_collidable(mut commands: Commands, collidables: Query<(Entity, &Collidable)>) {
+pub fn despawn_dead_collidable(
+    mut commands: Commands,
+    collidables: Query<(Entity, &Collidable), Without<Persistent>>,
+) {
     for (entity, collidable) in collidables.iter() {
         if !collidable.is_alive() {
             commands.entity(entity).despawn();

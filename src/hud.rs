@@ -1,9 +1,12 @@
 use crate::collision::Collidable;
-use crate::ship::Ship;
+use crate::ship::{PlayerLives, Ship};
 use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct ScoreDisplay;
+
+#[derive(Component)]
+pub struct LivesDisplay;
 
 #[derive(Component)]
 pub struct HealthBar;
@@ -56,6 +59,23 @@ pub fn setup_hud(mut commands: Commands) {
         },
     ));
 
+    // Lives display
+    commands.spawn((
+        LivesDisplay,
+        Text::new("Lives: 100"),
+        TextFont {
+            font_size: 32.0,
+            ..default()
+        },
+        TextColor(Color::WHITE),
+        Node {
+            position_type: PositionType::Absolute,
+            top: px(12),
+            right: px(12),
+            ..default()
+        },
+    ));
+
     // Health bar container
     commands
         .spawn((
@@ -94,6 +114,15 @@ pub fn update_score_display(
     }
 }
 
+pub fn update_lives_display(
+    player_lives: Res<PlayerLives>,
+    mut lives_text_query: Query<&mut Text, With<LivesDisplay>>,
+) {
+    for mut text in lives_text_query.iter_mut() {
+        *text = Text::new(format!("Lives: {}", player_lives.lives));
+    }
+}
+
 pub fn update_health_bar(
     ship_query: Query<&Collidable, With<Ship>>,
     mut health_bar_fill_query: Query<&mut Node, With<HealthBarFill>>,
@@ -116,6 +145,9 @@ impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayerScore>()
             .add_systems(Startup, setup_hud)
-            .add_systems(Update, (update_score_display, update_health_bar));
+            .add_systems(
+                Update,
+                (update_score_display, update_lives_display, update_health_bar),
+            );
     }
 }

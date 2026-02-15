@@ -1,7 +1,7 @@
-use crate::collision::{Collidable, Team};
+use crate::collision::{Collidable, Persistent, Team};
 use crate::weapons::cannon::create_cannon;
 use crate::weapons::create_rocket_launcher;
-use crate::weapons::weapon::{attach_weapon, fire_weapon, Weapon, WeaponMesh};
+use crate::weapons::weapon::{Weapon, WeaponMesh, attach_weapon, fire_weapon};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -12,20 +12,34 @@ pub struct ShipPlugin;
 
 impl Plugin for ShipPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_ship).add_systems(
-            Update,
-            (
-                update_ship_velocity,
-                set_ship_rotation,
-                switch_weapon_input,
-                activate_weapon,
-            ),
-        );
+        app.init_resource::<PlayerLives>()
+            .add_systems(Startup, setup_ship)
+            .add_systems(
+                Update,
+                (
+                    update_ship_velocity,
+                    set_ship_rotation,
+                    switch_weapon_input,
+                    activate_weapon,
+                    handle_ship_death,
+                ),
+            );
     }
 }
 
 #[derive(Resource)]
 pub struct SpaceshipEntity(pub Entity);
+
+#[derive(Resource)]
+pub struct PlayerLives {
+    pub lives: u32,
+}
+
+impl Default for PlayerLives {
+    fn default() -> Self {
+        Self { lives: 100 }
+    }
+}
 
 /// Removes the current weapon from a ship entity, including despawning weapon mesh
 pub fn remove_weapon(
@@ -77,6 +91,7 @@ pub fn setup_ship(
     let spaceship_entity = commands
         .spawn((
             Ship,
+            Persistent,
             Collidable::new(1000.0, 100.0, Team::Player), // no damage, 100 HP, player team
             Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
@@ -275,6 +290,28 @@ pub fn activate_weapon(
                 &asset_server,
                 &mut scene_spawner,
             );
+        }
+    }
+}
+
+pub fn handle_ship_death(
+    mut query: Query<(&mut Collidable, &mut Transform, &mut Velocity), With<Ship>>,
+    mut player_lives: ResMut<PlayerLives>,
+    spaceship_entity: Res<SpaceshipEntity>,
+) {
+    if let Ok((mut collidable, mut transform, mut velocity)) = query.get_mut(spaceship_entity.0) {
+        if !collidable.is_alive() {
+            if player_lives.lives > 0 {
+                player_lives.lives -= 1;
+                // Reset ship
+                collidable.hit_points = collidable.max_hit_points;
+                transform.translation = Vec3::ZERO;
+                transform.rotation = Quat::IDENTITY;
+                *velocity = Velocity::default();
+                println!("Ship died! Remaining lives: {}", player_lives.lives);
+            }
+            // If lives reach 0, we could handle game over here,
+            // but for now we'll just let it stay at 0 HP.
         }
     }
 }
