@@ -1,8 +1,32 @@
 use crate::collision::{Collidable, Team};
 use crate::weapons::cannon::create_cannon;
-use crate::weapons::weapon::attach_weapon;
+use crate::weapons::weapon::{attach_weapon, fire_weapon, Weapon};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
+
+pub fn drone_behave(
+    entity: Entity,
+    weapon: &mut Weapon,
+    transforms: &Query<&Transform>,
+    velocities: &Query<&Velocity>,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    asset_server: &Res<AssetServer>,
+    scene_spawner: &mut ResMut<SceneSpawner>,
+) {
+    fire_weapon(
+        weapon,
+        entity,
+        transforms,
+        velocities,
+        commands,
+        meshes,
+        materials,
+        asset_server,
+        scene_spawner,
+    );
+}
 
 pub fn spawn_drone(
     commands: &mut Commands,
@@ -18,7 +42,10 @@ pub fn spawn_drone(
 
     let drone_entity = commands
         .spawn((
-            super::Enemy::default(),
+            super::Enemy {
+                score: 100,
+                behave: Some(drone_behave),
+            },
             Collidable::new(20.0, super::ENEMY_HIT_POINTS, Team::Enemy), // 20 damage, 20 HP, enemy team
             Velocity::linear(left_velocity),
             RigidBody::KinematicVelocityBased,

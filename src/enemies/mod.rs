@@ -3,20 +3,36 @@ pub mod drones;
 use crate::collision::Collidable;
 use crate::hud::PlayerScore;
 use crate::projectiles::Projectile;
+use crate::weapons::weapon::Weapon;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 use drones::spawn_drone;
 
 pub const ENEMY_HIT_POINTS: f32 = 20.0;
 
+pub type EnemyBehave = fn(
+    Entity,
+    &mut Weapon,
+    &Query<&Transform>,
+    &Query<&Velocity>,
+    &mut Commands,
+    &mut ResMut<Assets<Mesh>>,
+    &mut ResMut<Assets<StandardMaterial>>,
+    &Res<AssetServer>,
+    &mut ResMut<SceneSpawner>,
+);
+
 #[derive(Component)]
 pub struct Enemy {
     pub score: u32,
+    pub behave: Option<EnemyBehave>,
 }
 
 impl Default for Enemy {
     fn default() -> Self {
         Self {
             score: 100, // Default score for destroying an enemy
+            behave: None,
         }
     }
 }
@@ -121,6 +137,33 @@ pub fn despawn_out_of_bounds_enemies(
     }
 }
 
+pub fn enemy_behavior(
+    mut query: Query<(Entity, &Enemy, &mut Weapon)>,
+    transforms: Query<&Transform>,
+    velocities: Query<&Velocity>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut scene_spawner: ResMut<SceneSpawner>,
+) {
+    for (entity, enemy, mut weapon) in query.iter_mut() {
+        if let Some(behave_fn) = enemy.behave {
+            behave_fn(
+                entity,
+                &mut weapon,
+                &transforms,
+                &velocities,
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                &asset_server,
+                &mut scene_spawner,
+            );
+        }
+    }
+}
+
 pub struct EnemiesPlugin;
 
 impl Plugin for EnemiesPlugin {
@@ -131,6 +174,7 @@ impl Plugin for EnemiesPlugin {
                 update_enemy_colors,
                 despawn_dead_enemies,
                 despawn_out_of_bounds_enemies,
+                enemy_behavior,
             ),
         );
     }
